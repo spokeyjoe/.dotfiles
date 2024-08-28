@@ -146,6 +146,7 @@ if [ -f '/Users/josephqiu/google-cloud-sdk/completion.zsh.inc' ]; then . '/Users
 alias python=/opt/homebrew/bin/python3.9
 
 export OPENAI_API_KEY='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'
+export ANTHROPIC_API_KEY='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'
 
 
 export NVM_DIR="$HOME/.nvm"

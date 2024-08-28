@@ -308,7 +308,7 @@ return {
         },
       }
 
-      vim.cmd [[nnoremap <leader>tf :Neotree reveal_force_cwd<cr>]]
+      vim.cmd [[nnoremap <leader>tf :Neotree toggle reveal_force_cwd<cr>]]
       vim.cmd [[nnoremap <leader>tb :Neotree toggle show buffers right<cr>]]
       vim.cmd [[nnoremap <leader>tg :Neotree float git_status<cr>]]
     end,
