@@ -547,7 +547,12 @@ require('lazy').setup({
       --  - settings (table): Override the default settings passed when initializing the server.
       --        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
       local servers = {
-        -- clangd = {},
+        clangd = {
+          cmd = {
+            'clangd',
+            'query-driver="/usr/bin/clang++"',
+          },
+        },
         -- gopls = {},
         -- pyright = {},
         -- rust_analyzer = {},
@@ -634,6 +639,8 @@ require('lazy').setup({
       end,
       formatters_by_ft = {
         lua = { 'stylua' },
+        c = { 'clang-format' },
+        cpp = { 'clang-format' },
         -- Conform can also run multiple formatters sequentially
         -- python = { "isort", "black" },
         --
@@ -822,9 +829,9 @@ require('lazy').setup({
         -- Some languages depend on vim's regex highlighting system (such as Ruby) for indent rules.
         --  If you are experiencing weird indenting issues, add the language to
         --  the list of additional_vim_regex_highlighting and disabled languages for indent.
-        additional_vim_regex_highlighting = true,
+        additional_vim_regex_highlighting = { 'cpp' },
       },
-      indent = { enable = true, disable = { 'ruby' } },
+      indent = { enable = true, disable = { 'ruby', 'cpp' } },
     },
     config = function(_, opts)
       -- [[ Configure Treesitter ]] See `:help nvim-treesitter`
