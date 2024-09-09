@@ -1,0 +1,23 @@
+# macOS system files
+.DS_Store
+
+# Build outputs
+*.o
+*.out
+*.exe
+*.dll
+*.so
+*.dylib
+
+# IDEs and editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary files
+*.tmp
+*.log
+
+# Zip files
+*.zip
