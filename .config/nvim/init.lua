@@ -547,13 +547,6 @@ require('lazy').setup({
       --  - settings (table): Override the default settings passed when initializing the server.
       --        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
       local servers = {
-        clangd = {
-          cmd = {
-            'clangd',
-            'query-driver="/usr/bin/clang++"',
-          },
-        },
-        -- gopls = {},
         -- pyright = {},
         -- rust_analyzer = {},
         -- ... etc. See `:help lspconfig-all` for a list of all the pre-configured LSPs
@@ -564,6 +557,30 @@ require('lazy').setup({
         -- But for many setups, the LSP (`tsserver`) will work just fine
         -- tsserver = {},
         --
+
+        clangd = {
+          cmd = {
+            'clangd',
+            '--enable-config',
+            '--background-index',
+            '--clang-tidy',
+            '--header-insertion=iwyu',
+            '--completion-style=detailed',
+            '--function-arg-placeholders',
+            '--fallback-style=llvm',
+          },
+          init_options = {
+            clangdFileStatus = true,
+            usePlaceholders = true,
+            completeUnimported = true,
+            semanticHighlighting = true,
+          },
+          -- If you need to add extra flags or include paths, you can do it here:
+          -- flags = {
+          --   "--extra-flag",
+          -- },
+          -- capabilities = ..., -- if you need to override capabilities
+        },
 
         lua_ls = {
           -- cmd = {...},
