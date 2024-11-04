@@ -7,6 +7,8 @@ vim.opt.number = true
 
 vim.opt.cursorline = true
 
+vim.opt.conceallevel = 2
+
 -- highlight search results
 vim.opt.hlsearch = true
 
@@ -29,3 +31,7 @@ vim.opt.timeoutlen = 300
 -- display whitespace characters
 vim.opt.list = true
 vim.opt.listchars = { tab = "» ", trail = "·", nbsp = "␣" }
+
+-- how splits are open
+vim.opt.splitright = true
+vim.opt.splitbelow = true
