@@ -1,4 +1,4 @@
-require("configs")
-require("keymaps")
-require("bootlazy")
-require("lazy").setup("plugins")
+require "configs"
+require "keymaps"
+require "bootlazy"
+require("lazy").setup "plugins"
