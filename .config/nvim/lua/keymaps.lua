@@ -26,6 +26,7 @@ vim.api.nvim_create_autocmd("TextYankPost", {
 vim.keymap.set("n", "<leader>on", "<cmd>ObsidianNew<CR>", { desc = "Create New Note" })
 vim.keymap.set("n", "<leader>os", "<cmd>ObsidianSearch<CR>", { desc = "Search Obsidian" })
 vim.keymap.set("n", "<leader>oq", "<cmd>ObsidianQuickSwitch<CR>", { desc = "Quick Switch" })
+vim.keymap.set("n", "<leader>ot", "<cmd>ObsidianToday<CR>", { desc = "Daily Note" })
 
 -- neotree
 vim.keymap.set(
