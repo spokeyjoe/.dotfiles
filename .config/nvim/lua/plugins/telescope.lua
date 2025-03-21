@@ -39,10 +39,9 @@ return {
 
       vim.keymap.set("n", "<leader>s/", function()
         builtin.live_grep {
-          grep_open_files = true,
-          prompt_title = "Live Grep in Open Files",
+          prompt_title = "Live Grep",
         }
-      end, { desc = "[S]earch [/] in Open Files" })
+      end, { desc = "[S]earch [/] in Directory" })
 
       vim.keymap.set("n", "<leader>sn", function()
         builtin.find_files { cwd = vim.fn.stdpath "config" }
