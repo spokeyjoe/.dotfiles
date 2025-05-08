@@ -9,3 +9,6 @@ require "bootlazy"
 
 -- load plugins
 require("lazy").setup "plugins"
+
+-- colorscheme
+require "colorscheme"
