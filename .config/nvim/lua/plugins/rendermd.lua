@@ -2,9 +2,9 @@ return {
   "MeanderingProgrammer/render-markdown.nvim",
   dependencies = { "nvim-treesitter/nvim-treesitter", "echasnovski/mini.nvim" }, -- if you use the mini.nvim suite
   opts = {
-    file_types = { "markdown", "Avante" },
+    file_types = { "markdown" },
   },
-  ft = { "markdown", "Avante" },
+  ft = { "markdown" },
 
   config = function()
     require("render-markdown").setup {
