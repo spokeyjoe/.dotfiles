@@ -21,11 +21,3 @@ vim.api.nvim_create_autocmd("TextYankPost", {
     vim.highlight.on_yank()
   end,
 })
-
--- neotree
-vim.keymap.set(
-  "n",
-  "<leader>t",
-  "<cmd>Neotree toggle reveal_force_cwd<CR>",
-  { desc = "Toggle Neotree" }
-)
