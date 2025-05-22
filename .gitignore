@@ -21,3 +21,7 @@
 
 # Zip files
 *.zip
+.config/raycast/extensions
+.config/qBittorrent
+.config/nvim/lazy-lock.json
+.config/github-copilot
