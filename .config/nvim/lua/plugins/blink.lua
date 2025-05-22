@@ -25,6 +25,7 @@ return {
       preset = "default",
       ["<Tab>"] = { "select_next", "fallback" },
       ["<S-Tab>"] = { "select_prev", "fallback" },
+      ["<C-space>"] = { "show", "hide", "show_documentation", "hide_documentation" },
     },
 
     appearance = {
@@ -41,9 +42,18 @@ return {
     },
 
     sources = {
-      default = { "lsp", "path", "snippets", "buffer", "lazydev" },
+      default = { "minuet", "lsp", "path", "snippets", "buffer", "lazydev" },
       providers = {
         lazydev = { module = "lazydev.integrations.blink", score_offset = 100 },
+        minuet = {
+          name = "minuet",
+          module = "minuet.blink",
+          async = true,
+          -- Should match minuet.config.request_timeout * 1000,
+          -- since minuet.config.request_timeout is in seconds
+          timeout_ms = 3000,
+          score_offset = 500, -- Gives minuet higher priority among suggestions
+        },
       },
     },
 
