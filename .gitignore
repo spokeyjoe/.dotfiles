@@ -26,3 +26,4 @@
 .config/nvim/lazy-lock.json
 .config/github-copilot
 .config/clash
+.config/fish/config.fish
