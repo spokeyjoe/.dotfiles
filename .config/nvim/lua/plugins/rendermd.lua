@@ -4,7 +4,7 @@ return {
   opts = {
     file_types = { "markdown" },
   },
-  ft = { "markdown" },
+  ft = { "markdown", "codecompanion" },
 
   config = function()
     require("render-markdown").setup {
