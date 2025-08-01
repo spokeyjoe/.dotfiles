@@ -11,7 +11,7 @@ return {
         provider_options = {
           openai_compatible = {
             end_point = "https://openrouter.ai/api/v1/chat/completions",
-            model = "google/gemini-2.5-flash-preview-05-20",
+            model = "google/gemini-2.5-flash",
             name = "Gemini-2.5-Flash",
             optional = {
               max_tokens = 56,
