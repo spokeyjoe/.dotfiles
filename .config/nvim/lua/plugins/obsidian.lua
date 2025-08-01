@@ -38,9 +38,9 @@ return {
 
       completion = {
         -- Enables completion using nvim_cmp
-        nvim_cmp = true,
+        nvim_cmp = false,
         -- Enables completion using blink.cmp
-        blink = false,
+        blink = true,
         -- Trigger completion at 2 chars.
         min_chars = 2,
         match_case = true,
