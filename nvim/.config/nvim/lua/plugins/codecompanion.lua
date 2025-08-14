@@ -5,30 +5,48 @@ return {
       "nvim-lua/plenary.nvim",
       "nvim-treesitter/nvim-treesitter",
     },
-    opts = {
-      display = {
-        action_palette = {
-          width = 95,
-          height = 10,
-          prompt = "Prompt ",
-          provider = "telescope",
-          opts = {
-            show_default_actions = true,
-            show_default_prompt_library = true,
+    config = function()
+      require("codecompanion").setup {
+        -- default adapters
+        strategies = {
+          chat = {
+            adapter = "anthropic",
+          },
+          inline = {
+            adapter = "anthropic",
+          },
+          cmd = {
+            adapter = "anthropic",
           },
         },
-      },
-      strategies = {
-        chat = {
-          adapter = "openai",
+        -- adapter configs
+        adapters = {
+          anthropic = function()
+            return require("codecompanion.adapters").extend("anthropic", {
+              schema = {
+                model = {
+                  default = "claude-sonnet-4-20250514",
+                },
+              },
+            })
+          end,
         },
-        inline = {
-          adapter = "anthropic",
-        },
-        cmd = {
-          adapter = "anthropic",
-        },
-      },
-    },
+      }
+
+      vim.keymap.set(
+        { "n", "v" },
+        "<leader>ck",
+        "<cmd>CodeCompanionActions<cr>",
+        { noremap = true, silent = true }
+      )
+      vim.keymap.set(
+        { "n", "v" },
+        "<leader>cc",
+        "<cmd>CodeCompanionChat Toggle<cr>",
+        { noremap = true, silent = true }
+      )
+      vim.keymap.set("v", "ga", "<cmd>CodeCompanionChat Add<cr>", { noremap = true, silent = true })
+      vim.cmd [[cab cc CodeCompanion]]
+    end,
   },
 }
