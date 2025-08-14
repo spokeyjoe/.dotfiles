@@ -36,7 +36,23 @@ return {
     },
 
     completion = {
-      documentation = { auto_show = false, auto_show_delay_ms = 500 },
+      menu = {
+        border = "rounded",
+        draw = {
+          columns = {
+            { "kind_icon", "label", gap = 1 },
+            { "kind" },
+          },
+        },
+      },
+
+      documentation = {
+        auto_show = true,
+        auto_show_delay_ms = 100,
+        treesitter_highlighting = true,
+        window = { border = "rounded" },
+      },
+
       list = {
         selection = {
           preselect = false,
