@@ -48,6 +48,7 @@ return {
         builtin.live_grep { cwd = search_dir }
       end, { desc = "[S]earch [/] in Directory" })
 
+      -- Search Neovim configuration files
       vim.keymap.set("n", "<leader>sn", function()
         builtin.find_files { cwd = vim.fn.stdpath "config" }
       end, { desc = "[S]earch [N]eovim files" })
