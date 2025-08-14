@@ -37,10 +37,15 @@ return {
         { desc = "[ ] Find existing buffers" }
       )
 
+      -- Search within the current file's directory
+      -- If no file is open, searches from the current working directory
       vim.keymap.set("n", "<leader>s/", function()
-        builtin.live_grep {
-          prompt_title = "Live Grep",
-        }
+        local current_file = vim.api.nvim_buf_get_name(0)
+        local search_dir
+        if current_file ~= "" then
+          search_dir = vim.fs.dirname(current_file)
+        end
+        builtin.live_grep { cwd = search_dir }
       end, { desc = "[S]earch [/] in Directory" })
 
       vim.keymap.set("n", "<leader>sn", function()
