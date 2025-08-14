@@ -16,7 +16,10 @@ return {
       dependencies = {},
       opts = {},
     },
+    -- lazydev
     "folke/lazydev.nvim",
+    -- copilot
+    "fang2hou/blink-copilot",
   },
   --- @module 'blink.cmp'
   --- @type blink.cmp.Config
@@ -42,18 +45,15 @@ return {
     },
 
     sources = {
-      default = { "minuet", "lsp", "path", "snippets", "buffer", "lazydev" },
+      default = { "copilot", "lsp", "path", "snippets", "buffer", "lazydev" },
       providers = {
-        lazydev = { module = "lazydev.integrations.blink", score_offset = 100 },
-        minuet = {
-          name = "minuet",
-          module = "minuet.blink",
+        copilot = {
+          name = "copilot",
+          module = "blink-copilot",
+          score_offset = 100,
           async = true,
-          -- Should match minuet.config.request_timeout * 1000,
-          -- since minuet.config.request_timeout is in seconds
-          timeout_ms = 3000,
-          score_offset = 500, -- Gives minuet higher priority among suggestions
         },
+        lazydev = { module = "lazydev.integrations.blink", score_offset = 100 },
       },
     },
 
