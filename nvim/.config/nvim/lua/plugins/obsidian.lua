@@ -120,9 +120,6 @@ return {
 
         return out
       end,
-
-      -- Optional, set to true to force ':Obsidian open' to bring the app to the foreground.
-      open_app_foreground = true,
     }
 
     vim.keymap.set("n", "<leader>on", "<cmd>Obsidian new<CR>", { desc = "Create New Note" })
