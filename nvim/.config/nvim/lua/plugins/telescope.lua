@@ -45,7 +45,10 @@ return {
         if current_file ~= "" then
           search_dir = vim.fs.dirname(current_file)
         end
-        builtin.live_grep { cwd = search_dir }
+        builtin.live_grep {
+          prompt_title = "Live Grep in " .. vim.fn.fnamemodify(search_dir, ":t"),
+          cwd = search_dir,
+        }
       end, { desc = "[S]earch [/] in Directory" })
 
       -- Search Neovim configuration files
