@@ -29,6 +29,7 @@ return {
       ["<Tab>"] = { "select_next", "fallback" },
       ["<S-Tab>"] = { "select_prev", "fallback" },
       ["<C-space>"] = { "show", "hide", "show_documentation", "hide_documentation" },
+      ["<CR>"] = { "accept", "fallback" },
     },
 
     appearance = {
