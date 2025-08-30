@@ -6,6 +6,7 @@ return {
     "nvim-tree/nvim-web-devicons",
     "MunifTanjim/nui.nvim",
   },
+  event = "BufEnter",
   config = function()
     require("neo-tree").setup {
       follow_current_file = {
