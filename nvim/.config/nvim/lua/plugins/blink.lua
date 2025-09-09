@@ -27,7 +27,8 @@ return {
     keymap = {
       preset = "default",
       ["<Tab>"] = { "select_next", "fallback" },
-      ["<S-Tab>"] = { "select_prev", "fallback" },
+      ["<Up>"] = { "select_prev", "fallback" },
+      ["<Down>"] = { "select_next", "fallback" },
       ["<C-space>"] = { "show", "hide", "show_documentation", "hide_documentation" },
       ["<CR>"] = { "accept", "fallback" },
     },
@@ -64,13 +65,29 @@ return {
     sources = {
       default = { "copilot", "lsp", "path", "snippets", "buffer", "lazydev" },
       providers = {
+        snippets = {
+          score_offset = 4,
+        },
+        lsp = {
+          score_offset = 3,
+        },
+        path = {
+          score_offset = 2,
+        },
+        buffer = {
+          score_offset = 1,
+        },
+
         copilot = {
           name = "copilot",
           module = "blink-copilot",
-          score_offset = 100,
           async = true,
+          score_offset = 2,
         },
-        lazydev = { module = "lazydev.integrations.blink", score_offset = 100 },
+
+        lazydev = {
+          module = "lazydev.integrations.blink",
+        },
       },
     },
 
