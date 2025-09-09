@@ -9,6 +9,9 @@ vim.opt.cursorline = true
 
 vim.opt.conceallevel = 2
 
+-- relative line numbers
+vim.opt.relativenumber = true
+
 -- highlight search results
 vim.opt.hlsearch = true
 
