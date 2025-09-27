@@ -13,6 +13,11 @@ vim.keymap.set("t", "<Esc><Esc>", "<C-\\><C-n>", { desc = "Exit terminal mode" }
 -- split window navigation
 vim.keymap.set("n", "\\", "<C-w><C-w>", { desc = "Move to the next window" })
 
+-- gq to format with Conform
+vim.keymap.set("o", "q", function()
+  require("conform").format { lsp_fallback = true, async = true }
+end, { desc = "Format with Conform" })
+
 -- highlight when yanking
 vim.api.nvim_create_autocmd("TextYankPost", {
   desc = "Highlight when yanking",
