@@ -5,12 +5,10 @@ return {
     "williamboman/mason-lspconfig.nvim",
     "WhoIsSethDaniel/mason-tool-installer.nvim",
 
-    -- Useful status updates for LSP.
     { "j-hui/fidget.nvim", opts = {} },
 
     "saghen/blink.cmp",
   },
-
   config = function()
     vim.api.nvim_create_autocmd("LspAttach", {
       group = vim.api.nvim_create_augroup("kickstart-lsp-attach", { clear = true }),
@@ -20,23 +18,20 @@ return {
           vim.keymap.set(mode, keys, func, { buffer = event.buf, desc = "LSP: " .. desc })
         end
 
-        -- Core "Go to" functionality using the 'g' prefix
-        map("gd", require("telescope.builtin").lsp_definitions, "[G]oto [D]efinition")
-        map("gi", require("telescope.builtin").lsp_implementations, "[G]oto [I]mplementation")
-        map("gt", require("telescope.builtin").lsp_type_definitions, "[G]oto [T]ype Definition")
-        map("gD", vim.lsp.buf.declaration, "[G]oto [D]eclaration")
+        map("grn", vim.lsp.buf.rename, "[R]e[n]ame")
+        map("gra", vim.lsp.buf.code_action, "[G]oto Code [A]ction", { "n", "x" })
+        map("grr", require("telescope.builtin").lsp_references, "[G]oto [R]eferences")
+        map("gri", require("telescope.builtin").lsp_implementations, "[G]oto [I]mplementation")
+        map("grD", vim.lsp.buf.declaration, "[G]oto [D]eclaration")
+        map("grd", require("telescope.builtin").lsp_definitions, "[G]oto [D]efinition") --  To jump back, press <C-t>.
 
-        -- LSP actions using the <leader> key
-        map("<leader>rn", vim.lsp.buf.rename, "[R]e[n]ame")
-        map("<leader>ca", vim.lsp.buf.code_action, "[C]ode [A]ction")
-
-        -- Symbol searching using the <leader> key
-        map("<leader>ds", require("telescope.builtin").lsp_document_symbols, "[D]ocument [S]ymbols")
+        map("gO", require("telescope.builtin").lsp_document_symbols, "Open Document Symbols")
         map(
-          "<leader>ws",
+          "gW",
           require("telescope.builtin").lsp_dynamic_workspace_symbols,
-          "[W]orkspace [S]ymbols"
+          "Open Workspace Symbols"
         )
+        map("grt", require("telescope.builtin").lsp_type_definitions, "[G]oto [T]ype Definition")
 
         -- This function resolves a difference between neovim nightly (version 0.11) and stable (version 0.10)
         ---@param client vim.lsp.Client
@@ -51,11 +46,6 @@ return {
           end
         end
 
-        -- The following two autocommands are used to highlight references of the
-        -- word under your cursor when your cursor rests there for a little while.
-        --    See `:help CursorHold` for information about when this is executed
-        --
-        -- When you move your cursor, the highlights will be cleared (the second autocommand).
         local client = vim.lsp.get_client_by_id(event.data.client_id)
         if
           client
@@ -88,10 +78,6 @@ return {
           })
         end
 
-        -- The following code creates a keymap to toggle inlay hints in your
-        -- code, if the language server you are using supports them
-        --
-        -- This may be unwanted, since they displace some of your code
         if
           client
           and client_supports_method(
