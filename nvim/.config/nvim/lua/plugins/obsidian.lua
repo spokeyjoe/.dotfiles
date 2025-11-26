@@ -73,25 +73,39 @@ return {
         return tostring(os.time()) .. "-" .. suffix
       end,
 
-      -- Optional, alternatively you can customize the frontmatter data.
-      ---@return table
-      note_frontmatter_func = function(note)
-        if note.title then
-          note:add_alias(note.title)
-        end
-
-        local out = { id = note.id, aliases = note.aliases, tags = note.tags, title = note.title }
-
-        -- `note.metadata` contains any manually added fields in the frontmatter.
-        -- So here we just make sure those fields are kept in the frontmatter.
-        if note.metadata ~= nil and not vim.tbl_isempty(note.metadata) then
-          for k, v in pairs(note.metadata) do
-            out[k] = v
+      ---@class obsidian.config.FrontmatterOpts
+      ---
+      --- Whether to enable frontmatter, boolean for global on/off, or a function that takes filename and returns boolean.
+      ---@field enabled? (fun(fname: string?): boolean)|boolean
+      ---
+      --- Function to turn Note attributes into frontmatter.
+      ---@field func? fun(note: obsidian.Note): table<string, any>
+      --- Function that is passed to table.sort to sort the properties, or a fixed order of properties.
+      ---
+      --- List of string that sorts frontmatter properties, or a function that compares two values, set to vim.NIL/false to do no sorting
+      ---@field sort? string[] | (fun(a: any, b: any): boolean) | vim.NIL | boolean
+      frontmatter = {
+        enabled = true,
+        func = function(note)
+          if note.title then
+            note:add_alias(note.title)
           end
-        end
 
-        return out
-      end,
+          local out = { id = note.id, aliases = note.aliases, tags = note.tags, title = note.title }
+
+          -- `note.metadata` contains any manually added fields in the frontmatter.
+          -- So here we just make sure those fields are kept in the frontmatter.
+          if note.metadata ~= nil and not vim.tbl_isempty(note.metadata) then
+            for k, v in pairs(note.metadata) do
+              out[k] = v
+            end
+          end
+
+          return out
+        end,
+
+        sort = { "id", "aliases", "tags", "title" },
+      },
     }
 
     vim.api.nvim_create_autocmd("User", {
