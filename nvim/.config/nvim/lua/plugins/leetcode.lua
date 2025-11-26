@@ -8,7 +8,7 @@ return {
   config = function()
     require("leetcode").setup {
       ---@type lc.lang
-      lang = "python3",
+      lang = "cpp",
 
       vim.keymap.set("n", "<leader>lc", "<cmd>Leet<cr>", {
         desc = "LeetCode: Menu",
