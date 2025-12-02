@@ -9,6 +9,10 @@ vim.opt.cursorline = true
 
 vim.opt.conceallevel = 2
 
+-- tabstop
+vim.opt.tabstop = 4
+vim.opt.shiftwidth = 4
+
 -- relative line numbers
 vim.opt.relativenumber = true
 
