@@ -20,6 +20,20 @@ if status --is-interactive
     end
 end
 
+# Universal Homebrew Setup
+set -l brew_paths \
+    "/opt/homebrew/bin/brew" \
+    "/usr/local/bin/brew" \
+    "/home/linuxbrew/.linuxbrew/bin/brew" \
+    "$HOME/.linuxbrew/bin/brew"
+
+for brew_exe in $brew_paths
+    if test -f $brew_exe
+        eval ($brew_exe shellenv)
+        break
+    end
+end
+
 # OS-Specific Configs
 if test (uname) = "Darwin"
     # Homebrew Paths (Apple Silicon)
