@@ -1,0 +1,14 @@
+# Machine-Specific & Secrets
+fish_variables
+secrets.fish
+
+# Default Ignored
+functions/
+conf.d/
+completions/
+themes/
+
+# Whitelists
+!config.fish
+!fish_plugins
+!functions/proxy_on.fish
