@@ -10,10 +10,19 @@ return {
       { "nvim-tree/nvim-web-devicons", enabled = vim.g.have_nerd_font },
     },
     config = function()
-      -- Two important keymaps to use while in Telescope are:
-      --  - Insert mode: <c-/>
-      --  - Normal mode: ?
+      local actions = require "telescope.actions"
+
       require("telescope").setup {
+        defaults = {
+          mappings = {
+            i = {
+              ["<C-s>"] = actions.select_vertical,
+            },
+            n = {
+              ["<C-s>"] = actions.select_vertical,
+            },
+          },
+        },
         extensions = {
           ["ui-select"] = {
             require("telescope.themes").get_dropdown(),
