@@ -125,7 +125,13 @@ return {
     local capabilities = require("blink.cmp").get_lsp_capabilities()
 
     local servers = {
-      clangd = {},
+      clangd = {
+        capabilities = {
+          offsetEncoding = {
+            "utf-16",
+          },
+        },
+      },
 
       ruff = {},
 
@@ -142,20 +148,31 @@ return {
       },
     }
 
-    for server_name, server_config in pairs(servers) do
-      server_config.capabilities =
-        vim.tbl_deep_extend("force", {}, capabilities, server_config.capabilities or {})
-      vim.lsp.config(server_name, server_config)
+    require("mason").setup()
+    local ensure_installed = vim.tbl_keys(servers or {})
+    vim.list_extend(ensure_installed, { "stylua", "black" })
+    require("mason-tool-installer").setup { ensure_installed = ensure_installed }
+
+    for server_name, user_config in pairs(servers) do
+      -- server_config.capabilities =
+      --   vim.tbl_deep_extend("force", {}, capabilities, server_config.capabilities or {})
+      -- vim.lsp.config(server_name, server_config)
+      -- vim.lsp.enable(server_name)
+
+      local success, _ = pcall(require, "lspconfig.server_configurations." .. server_name)
+      local default_config = success and require("lspconfig.configs")[server_name].default_config
+        or {}
+      local final_capabilities = vim.tbl_deep_extend(
+        "force",
+        default_config.capabilities or {},
+        capabilities,
+        user_config.capabilities or {}
+      )
+      local final_config = vim.tbl_deep_extend("force", default_config, user_config)
+      final_config.capabilities = final_capabilities
+
+      vim.lsp.config[server_name] = final_config
       vim.lsp.enable(server_name)
     end
-
-    -- Ensure the servers and tools above are installed
-    local ensure_installed = vim.tbl_keys(servers or {})
-    vim.list_extend(ensure_installed, {
-      "stylua",
-      "ruff",
-      "black",
-    })
-    require("mason-tool-installer").setup { ensure_installed = ensure_installed }
   end,
 }
