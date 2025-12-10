@@ -25,8 +25,20 @@ vim.opt.scrolloff = 12
 -- we already have mode shown in the status line
 vim.opt.showmode = false
 
--- sync clipboard between OS and Neovim
+-- sync clipboard with OSC 52
 vim.opt.clipboard = "unnamedplus"
+
+vim.g.clipboard = {
+  name = "OSC 52",
+  copy = {
+    ["+"] = require("vim.ui.clipboard.osc52").copy "+",
+    ["*"] = require("vim.ui.clipboard.osc52").copy "*",
+  },
+  paste = {
+    ["+"] = require("vim.ui.clipboard.osc52").paste "+",
+    ["*"] = require("vim.ui.clipboard.osc52").paste "*",
+  },
+}
 
 -- case-insensitive search, unless capital letters are used
 vim.opt.ignorecase = true
@@ -42,3 +54,10 @@ vim.opt.listchars = { tab = "» ", trail = "·", nbsp = "␣" }
 -- how splits are open
 vim.opt.splitright = true
 vim.opt.splitbelow = true
+
+-- ac file recognized as cuda
+vim.filetype.add {
+  extension = {
+    ac = "cuda",
+  },
+}
