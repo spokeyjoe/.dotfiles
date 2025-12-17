@@ -11,22 +11,22 @@ return {
       lang = "cpp",
 
       vim.keymap.set("n", "<leader>lc", "<cmd>Leet<cr>", {
-        desc = "LeetCode: Menu",
+        desc = "[L]eetCode",
       }),
       vim.keymap.set("n", "<leader>lt", "<cmd>Leet test<cr>", {
-        desc = "LeetCode: Run Test",
+        desc = "[L]eetCode Run [T]est",
       }),
       vim.keymap.set("n", "<leader>li", "<cmd>Leet info<cr>", {
-        desc = "LeetCode: Question Info",
+        desc = "[L]eetCode Question [I]nfo",
       }),
       vim.keymap.set("n", "<leader>ls", "<cmd>Leet submit<cr>", {
-        desc = "LeetCode: Submit Solution",
+        desc = "[L]eetCode [S]ubmit",
       }),
       vim.keymap.set("n", "<leader>ll", "<cmd>Leet last_submit<cr>", {
-        desc = "LeetCode: Last Submit",
+        desc = "[L]eetCode [L]ast Submit",
       }),
       vim.keymap.set("n", "<leader>ly", "<cmd>Leet yank<cr>", {
-        desc = "LeetCode: Copy Solution",
+        desc = "[L]eetCode [Y]ank Solution",
       }),
     }
   end,
