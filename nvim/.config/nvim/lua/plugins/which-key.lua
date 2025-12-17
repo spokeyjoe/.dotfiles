@@ -47,6 +47,8 @@ return {
         { "<leader>t", group = "[T]oggle" },
         { "<leader>l", group = "[L]eetcode" },
         { "<leader>g", group = "[G]itsigns", mode = { "n", "v" } },
+        { "<leader>q", group = "[Q]uickfix" },
+
         { "gr", group = "LSP" },
       },
     },
