@@ -67,8 +67,3 @@ alias tn='tmux new-session -s'
 alias tk='tmux kill-session -t'
 alias tka='tmux kill-server'
 alias tm='tmux attach-session -t main 2>/dev/null || tmux new-session -s main'
-
-# Welcome message / MOTD can be configured via `fish_greeting` function
-function fish_greeting
-  echo "Welcome back, Joe!"
-end
