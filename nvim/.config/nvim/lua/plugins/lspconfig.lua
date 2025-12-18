@@ -18,19 +18,27 @@ return {
           vim.keymap.set(mode, keys, func, { buffer = event.buf, desc = "LSP: " .. desc })
         end
 
-        map("gd", require("telescope.builtin").lsp_definitions, "[G]oto [D]efinition") --  To jump back, press <C-t>.
+        local function safe_del_global(keys)
+          pcall(vim.keymap.del, "n", keys)
+        end
+
+        safe_del_global "grn" -- Rename
+        safe_del_global "gra" -- Code Action
+        safe_del_global "grr" -- References
+        safe_del_global "gri" -- Implementation
+        safe_del_global "grt" -- Type Definition
+
+        local fzf = require "fzf-lua"
+
+        map("gd", fzf.lsp_definitions, "[G]oto [D]efinition") --  To jump back, press <C-t>.
         map("gD", vim.lsp.buf.declaration, "[G]oto [D]eclaration")
-        map("gr", require("telescope.builtin").lsp_references, "[G]oto [R]eferences")
-        map("gI", require("telescope.builtin").lsp_implementations, "[G]oto [I]mplementation")
+        map("gr", fzf.lsp_references, "[G]oto [R]eferences")
+        map("gI", fzf.lsp_implementations, "[G]oto [I]mplementation")
         map("<leader>rn", vim.lsp.buf.rename, "[R]e[n]ame")
         map("<leader>ca", vim.lsp.buf.code_action, "[C]ode [A]ction", { "n", "x" })
-        map("<leader>T", require("telescope.builtin").lsp_type_definitions, "[T]ype Definition")
-        map("<leader>ds", require("telescope.builtin").lsp_document_symbols, "[D]ocument [S]ymbols")
-        map(
-          "<leader>ws",
-          require("telescope.builtin").lsp_dynamic_workspace_symbols,
-          "[W]orkspace [S]ymbols"
-        )
+        map("<leader>T", fzf.lsp_typedefs, "[T]ype Definition")
+        map("<leader>ds", fzf.lsp_document_symbols, "[D]ocument [S]ymbols")
+        map("<leader>ws", fzf.lsp_live_workspace_symbols, "[W]orkspace [S]ymbols")
 
         local client = vim.lsp.get_client_by_id(event.data.client_id)
         if client and client:supports_method(vim.lsp.protocol.Methods.textDocument_inlayHint) then
