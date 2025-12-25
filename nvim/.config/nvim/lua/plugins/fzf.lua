@@ -27,6 +27,7 @@ return {
         grep = {
           ["default"] = actions.file_edit,
           ["ctrl-s"] = actions.file_vsplit,
+          ["ctrl-t"] = actions.file_tabedit,
         },
       },
 
