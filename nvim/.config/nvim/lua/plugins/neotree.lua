@@ -9,11 +9,8 @@ return {
   event = "BufEnter",
   config = function()
     require("neo-tree").setup {
-      follow_current_file = {
-        enabled = true,
-        leave_dirs_open = false,
-      },
       close_if_last_window = true,
+      use_libuv_file_watcher = true,
     }
     vim.keymap.set(
       "n",
