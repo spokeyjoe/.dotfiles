@@ -75,7 +75,7 @@ alias tm='tmux attach-session -t main 2>/dev/null || tmux new-session -s main'
 # Proxy
 function proxy
     echo "🌐 Select Proxy Profile:"
-    echo "   [1] 🏢 Company (iPhone Hotspot -> 172.22.102.25)"
+    echo "   [1] 🏢 Company (iPhone Hotspot -> 172.22.100.210)"
     echo "   [2] 🏠 Home (Mac Surge -> 127.0.0.1)"
     echo "   [0] ❌ Cancel"
 
@@ -89,7 +89,7 @@ function proxy
     switch $choice
         case 1
             # --- Company (iPhone) ---
-            set -gx proxy_host "172.22.102.25"
+            set -gx proxy_host "172.22.100.210"
             set -gx proxy_http_port "6154"
             set -gx proxy_socks_port "6153"
             set -gx proxy_type "Company (iPhone)"
