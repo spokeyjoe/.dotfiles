@@ -1,6 +1,9 @@
 -- map jk to <Esc> in insert mode
 vim.keymap.set("i", "jk", "<Esc>", { noremap = true, silent = true })
 
+-- ts to tab split
+vim.keymap.set("n", "ts", "<cmd>tab split<CR>", { desc = "[T]ab [S]plit" })
+
 -- <Esc> to clear search highlighting
 vim.keymap.set("n", "<Esc>", "<cmd>nohlsearch<CR>")
 
