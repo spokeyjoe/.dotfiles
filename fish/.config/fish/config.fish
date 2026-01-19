@@ -17,11 +17,12 @@ set -g theme_hostname always
 
 # Preferred Editor
 if status --is-interactive
-    if test -n "$SSH_CONNECTION"
-        set -gx EDITOR vim
-    else
+    if type -q nvim
         set -gx EDITOR nvim
+    else
+        set -gx EDITOR vim
     end
+    set -gx GIT_EDITOR $EDITOR
 end
 
 # Universal Homebrew Setup
