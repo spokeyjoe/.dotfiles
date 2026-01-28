@@ -82,11 +82,7 @@ function copy --description 'Copy input to client clipboard using OSC 52'
 
     set -l b64 (echo -n "$input" | base64 | string join '')
 
-    if set -q TMUX
-        printf "\ePtmux;\e\e]52;c;%s\a\e\\" "$b64"
-    else
-        printf "\e]52;c;%s\a" "$b64"
-    end
+    printf "\e]52;c;%s\a" "$b64"
 end
 
 # Proxy
