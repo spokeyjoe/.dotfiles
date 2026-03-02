@@ -1,10 +1,15 @@
+local is_wsl = vim.fn.has "wsl" == 1
+local vault_path = is_wsl and "/mnt/c/Users/joe.qiu/Desktop/notes" or "~/Documents/notes"
+
 return {
   "obsidian-nvim/obsidian.nvim",
   version = "*", -- recommended, use latest release instead of latest commit
   lazy = true,
   event = {
-    "BufReadPre /Users/josephqiu/Documents/notes/*.md",
-    "BufNewFile /Users/josephqiu/Documents/notes/*.md",
+    "BufReadPre /Users/josephqiu/Documents/notes/**/*.md",
+    "BufNewFile /Users/josephqiu/Documents/notes/**/*.md",
+    "BufReadPre /mnt/c/Users/joe.qiu/Desktop/notes/**/*.md",
+    "BufNewFile /mnt/c/Users/joe.qiu/Desktop/notes/**/*.md",
   },
   dependencies = {
     "nvim-lua/plenary.nvim",
@@ -21,7 +26,7 @@ return {
       workspaces = {
         {
           name = "notes",
-          path = "~/Documents/notes",
+          path = vault_path,
         },
       },
 
