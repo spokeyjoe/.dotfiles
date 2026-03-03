@@ -1,16 +1,21 @@
 local is_wsl = vim.fn.has "wsl" == 1
-local vault_path = is_wsl and "/mnt/c/Users/joe.qiu/Desktop/notes" or "~/Documents/notes"
+local vault_path = is_wsl and "/mnt/c/Users/joe.qiu/Desktop/notes"
+  or vim.fn.expand "~/Documents/notes"
 
 return {
   "obsidian-nvim/obsidian.nvim",
   version = "*", -- recommended, use latest release instead of latest commit
   lazy = true,
+
+  cmd = { "ObsidianSearch", "ObsidianQuickSwitch", "ObsidianToday", "ObsidianNew" },
+
   event = {
-    "BufReadPre /Users/josephqiu/Documents/notes/**/*.md",
-    "BufNewFile /Users/josephqiu/Documents/notes/**/*.md",
-    "BufReadPre /mnt/c/Users/joe.qiu/Desktop/notes/**/*.md",
-    "BufNewFile /mnt/c/Users/joe.qiu/Desktop/notes/**/*.md",
+    "BufReadPre " .. vault_path .. "/**/*.md",
+    "BufNewFile " .. vault_path .. "/**/*.md",
+
+    "BufEnter " .. vault_path,
   },
+
   dependencies = {
     "nvim-lua/plenary.nvim",
     "hrsh7th/nvim-cmp",
@@ -113,17 +118,10 @@ return {
       },
     }
 
-    vim.api.nvim_create_autocmd("User", {
-      pattern = "ObsidianNoteEnter",
-      callback = function(ev)
-        vim.keymap.set(
-          "n",
-          "<leader>on",
-          "<cmd>Obsidian new<CR>",
-          { buffer = ev.buf, desc = "Create New Note" }
-        )
-      end,
-    })
+    vim.keymap.set("n", "<leader>on", "<cmd>Obsidian new<CR>", { desc = "Create New Note" })
+    vim.keymap.set("n", "<leader>os", "<cmd>Obsidian search<CR>", { desc = "Search Obsidian" })
+    vim.keymap.set("n", "<leader>oq", "<cmd>Obsidian quick_switch<CR>", { desc = "Quick Switch" })
+    vim.keymap.set("n", "<leader>ot", "<cmd>Obsidian today<CR>", { desc = "Daily Note" })
 
     vim.api.nvim_create_autocmd("User", {
       pattern = "ObsidianNoteEnter",
@@ -132,62 +130,14 @@ return {
           "n",
           "<leader>oo",
           "<cmd>Obsidian open<CR>",
-          { buffer = ev.buf, desc = "Open in Obsidian" }
+          { buffer = ev.buf, desc = "Open in Obsidian App" }
         )
-      end,
-    })
-
-    vim.api.nvim_create_autocmd("User", {
-      pattern = "ObsidianNoteEnter",
-      callback = function(ev)
-        vim.keymap.set(
-          "n",
-          "<leader>os",
-          "<cmd>Obsidian search<CR>",
-          { buffer = ev.buf, desc = "Search Obsidian" }
-        )
-      end,
-    })
-
-    vim.api.nvim_create_autocmd("User", {
-      pattern = "ObsidianNoteEnter",
-      callback = function(ev)
-        vim.keymap.set(
-          "n",
-          "<leader>oq",
-          "<cmd>Obsidian quick_switch<CR>",
-          { buffer = ev.buf, desc = "Quick Switch" }
-        )
-      end,
-    })
-
-    vim.api.nvim_create_autocmd("User", {
-      pattern = "ObsidianNoteEnter",
-      callback = function(ev)
-        vim.keymap.set(
-          "n",
-          "<leader>ot",
-          "<cmd>Obsidian today<CR>",
-          { buffer = ev.buf, desc = "Daily Note" }
-        )
-      end,
-    })
-
-    vim.api.nvim_create_autocmd("User", {
-      pattern = "ObsidianNoteEnter",
-      callback = function(ev)
         vim.keymap.set(
           "n",
           "<leader>of",
           "<cmd>Obsidian follow_link vsplit<CR>",
           { buffer = ev.buf, desc = "Follow Link with Split" }
         )
-      end,
-    })
-
-    vim.api.nvim_create_autocmd("User", {
-      pattern = "ObsidianNoteEnter",
-      callback = function(ev)
         vim.keymap.set(
           "n",
           "<leader>ob",
