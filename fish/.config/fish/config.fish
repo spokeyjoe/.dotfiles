@@ -47,15 +47,21 @@ if test (uname) = "Darwin"
         fish_add_path /opt/homebrew/opt/node@22/bin
     end
 
-    # Obsidian-nvim
-    alias on 'nvim ~/Documents/notes'
-    alias oh 'nvim ~/Documents/notes/1726823130-heap-file.md'
-
     # Kitty SSH
     if test "$TERM" = "xterm-kitty"; or type -q kitty
         alias ssh 'kitty +kitten ssh'
     end
 end
+
+# --- Obsidian Vault Paths (Cross-Platform) ---
+if test -n "$WSL_DISTRO_NAME"
+    set -g VAULT_PATH "/mnt/c/Users/joe.qiu/Desktop/notes"
+else
+    set -g VAULT_PATH "$HOME/Documents/notes"
+end
+
+alias on "nvim $VAULT_PATH"
+alias oh "nvim $VAULT_PATH/1726823130-heap-file.md"
 
 # --- pipx ---
 fish_add_path "$HOME/.local/bin" # Adds user's local bin, good for pipx installed tools
