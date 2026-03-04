@@ -8,6 +8,14 @@ return {
     fzf.setup {
       "default-title",
 
+      keymap = {
+        fzf = {
+          ["ctrl-q"] = "select-all+accept",
+          ["ctrl-a"] = "select-all",
+          ["ctrl-d"] = "deselect-all",
+        },
+      },
+
       ui_select = function(fzf_opts, items)
         return vim.tbl_deep_extend("force", fzf_opts, {
           prompt = "Code Actions> ",
@@ -23,11 +31,13 @@ return {
           ["default"] = actions.file_edit,
           ["ctrl-s"] = actions.file_vsplit,
           ["ctrl-t"] = actions.file_tabedit,
+          ["ctrl-q"] = actions.file_sel_to_qf,
         },
         grep = {
           ["default"] = actions.file_edit,
           ["ctrl-s"] = actions.file_vsplit,
           ["ctrl-t"] = actions.file_tabedit,
+          ["ctrl-q"] = actions.file_sel_to_qf,
         },
       },
 
