@@ -11,7 +11,7 @@ return {
           vim.keymap.set(mode, l, r, opts)
         end
 
-        map("n", "<leader>gb", gitsigns.blame_line, { desc = "[G]it [B]lame line" })
+        map("n", "<leader>gb", gitsigns.blame, { desc = "[G]it [B]lame" })
       end,
     }
   end,
