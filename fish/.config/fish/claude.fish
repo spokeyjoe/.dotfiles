@@ -22,21 +22,24 @@ function claude --description "Claude Code wrapper with OpenRouter key rotation"
         set -e argv[$idx]
         set choice "1"
     else
+        # 5. Interactive menu
         echo "Select Claude Code operating mode:"
         echo "  [1] Official Account Login (Default)"
         echo "  [2] OpenRouter (Randomized Key)"
         read -l -p 'echo "Enter 1 or 2 (Press Enter for 1): "' choice
     end
 
+    set -l claude_bin (command -v claude)
+
     if test "$choice" = "2"
         echo "=> [OpenRouter Mode] Assigned random key: "(string sub -l 20 $random_key)"..."
-
+ 
         env ANTHROPIC_BASE_URL="https://openrouter.ai/api" \
             ANTHROPIC_AUTH_TOKEN=$random_key \
             ANTHROPIC_API_KEY="" \
-            command claude $argv
+            $claude_bin $argv
     else
         echo "=> [Official Account Mode]"
-        command claude $argv
+        $claude_bin $argv
     end
 end
