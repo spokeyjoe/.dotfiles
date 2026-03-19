@@ -1,7 +1,9 @@
 {
+  "model": "opus[1m]",
   "enabledPlugins": {
     "clangd-lsp@claude-plugins-official": true,
     "superpowers@superpowers-marketplace": true,
     "code-review@claude-plugins-official": true
-  }
+  },
+  "effortLevel": "high"
 }
