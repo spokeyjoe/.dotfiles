@@ -10,4 +10,6 @@ secrets.fish
 
 # Whitelists
 !/functions/claude.fish
-!/functions/proxy_on.fish
+!/functions/copy.fish
+!/functions/proxy.fish
+!/functions/unproxy.fish
