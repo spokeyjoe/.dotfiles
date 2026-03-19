@@ -94,7 +94,7 @@ end
 # Proxy
 function proxy
     echo "🌐 Select Proxy Profile:"
-    echo "   [1] 🏢 Company (iPhone Hotspot -> 172.22.100.240)"
+    echo "   [1] 🏢 Company (iPhone Hotspot -> 172.22.100.34)"
     echo "   [2] 🏠 Home (Mac Surge -> 127.0.0.1)"
     echo "   [0] ❌ Cancel"
 
@@ -108,7 +108,7 @@ function proxy
     switch $choice
         case 1
             # --- Company (iPhone) ---
-            set -gx proxy_host "172.22.100.240"
+            set -gx proxy_host "172.22.100.34"
             set -gx proxy_http_port "6154"
             set -gx proxy_socks_port "6153"
             set -gx proxy_type "Company (iPhone)"
