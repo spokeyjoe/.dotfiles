@@ -47,7 +47,7 @@ function claude --description "Claude Code wrapper with OpenRouter key rotation"
     if test "$choice" = "2"
         echo "=> [OpenRouter Mode] Assigned random key: "(string sub -l 20 $random_key)"..."
 
-        env ANTHROPIC_BASE_URL="https://openrouter.ai/api" \
+        env ANTHROPIC_BASE_URL="https://api.evas.ai" \
             ANTHROPIC_AUTH_TOKEN=$random_key \
             ANTHROPIC_API_KEY="" \
             $claude_bin $argv
