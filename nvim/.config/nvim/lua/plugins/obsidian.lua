@@ -97,8 +97,22 @@ return {
       frontmatter = {
         enabled = true,
         func = function(note)
+          -- Overwrite title with the first # header in the buffer, if present
+          local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+          for _, line in ipairs(lines) do
+            local header = line:match("^# (.+)$")
+            if header then
+              note.title = header
+              break
+            end
+          end
+
           if note.title then
             note:add_alias(note.title)
+          end
+
+          if note.metadata then
+            note.metadata.title = nil
           end
 
           local out = { id = note.id, aliases = note.aliases, tags = note.tags, title = note.title }
