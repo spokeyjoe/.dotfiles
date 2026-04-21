@@ -56,13 +56,6 @@ return {
 
       new_notes_location = "current_dir",
 
-      -- Optional, customize how wiki links are formatted. You can set this to one of:
-      -- _ "use_alias_only", e.g. '[[Foo Bar]]'
-      -- _ "prepend*note_id", e.g. '[[foo-bar|Foo Bar]]'
-      -- * "prepend*note_path", e.g. '[[foo-bar.md|Foo Bar]]'
-      -- * "use_path_only", e.g. '[[foo-bar.md]]'
-      wiki_link_func = "prepend_note_id",
-
       -- Optional, customize how note IDs are generated given an optional title.
       ---@param title string|?
       ---@return string
@@ -100,7 +93,7 @@ return {
           -- Overwrite title with the first # header in the buffer, if present
           local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
           for _, line in ipairs(lines) do
-            local header = line:match("^# (.+)$")
+            local header = line:match "^# (.+)$"
             if header then
               note.title = header
               break
