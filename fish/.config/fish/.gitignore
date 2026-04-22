@@ -12,4 +12,5 @@ secrets.fish
 !/functions/claude.fish
 !/functions/copy.fish
 !/functions/proxy.fish
+!/functions/__proxy_find_iphone.fish
 !/functions/unproxy.fish
