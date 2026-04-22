@@ -1,6 +1,6 @@
 function proxy --description 'Enable terminal proxy'
     echo "🌐 Select Proxy Profile:"
-    echo "   [1] 🏢 Company (iPhone Hotspot -> 172.22.102.137)"
+    echo "   [1] 🏢 Company (iPhone Hotspot, auto-scan)"
     echo "   [2] 🏠 Home (Mac Surge -> 127.0.0.1)"
     echo "   [0] ❌ Cancel"
 
@@ -15,10 +15,12 @@ function proxy --description 'Enable terminal proxy'
     switch $choice
         case 1
             # --- Company (iPhone) ---
-            set -gx proxy_host "172.22.102.137"
+            set -l iphone_ip (__proxy_find_iphone)
+            or return 1
+            set -gx proxy_host $iphone_ip
             set -gx proxy_http_port "6154"
             set -gx proxy_socks_port "6153"
-            set -gx proxy_type "Company (iPhone)"
+            set -gx proxy_type "Company (iPhone @ $iphone_ip)"
         case 2
             # --- Home (Mac Surge) ---
             set -gx proxy_host "127.0.0.1"
