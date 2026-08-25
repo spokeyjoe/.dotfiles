@@ -82,7 +82,11 @@ to GitHub, or ssh in with agent forwarding (`ssh -A`) and use the SSH remote:
 
 The tide theme is stored as universal variables, so it lives in the
 machine-specific `fish_variables` (gitignored). The tracked snapshot is
-`fish/.config/fish/tide_vars.fish`, applied once by the bootstrap.
+`fish/.config/fish/tide_vars.fish`, applied by the bootstrap.
+
+NB: tide resets all its variables to defaults whenever it is freshly
+(re)installed by fisher — the bootstrap detects that and re-applies the
+snapshot automatically.
 
 After tweaking the prompt interactively, regenerate the snapshot:
 

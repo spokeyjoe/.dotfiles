@@ -373,6 +373,12 @@ stow_backup_conflicts() {
                 "$DOTFILES_DIR/"*) continue ;;
             esac
         fi
+        # Real file with identical content (e.g. fisher rewrote the stowed
+        # file in place) → just remove it, no backup needed
+        if [ -f "$target" ] && [ ! -L "$target" ] && cmp -s "$target" "$DOTFILES_DIR/$pkg/$rel"; then
+            rm -f "$target"
+            continue
+        fi
         mkdir -p "$(dirname "$BACKUP_DIR/$rel")"
         mv "$target" "$BACKUP_DIR/$rel"
         warn "backed up conflicting ~/$rel → $BACKUP_DIR/$rel"
@@ -429,31 +435,61 @@ install_fish_plugins() {
     [ "${SKIP_FISH_PLUGINS:-0}" = "1" ] && { skip "fish plugins (SKIP_FISH_PLUGINS=1)"; return; }
     bin_works fish --version || { warn "fish not working — skipping fish plugins"; return; }
     step "Installing fisher + fish plugins"
-    local fisher_src="" tmp=""
+    # Read the plugin manifest from the REPO, not the (symlinked) live file:
+    # fisher treats ~/.config/fish/fish_plugins as mutable state and deletes
+    # it outright when its own state (universal vars) is wiped.
+    local manifest="$DOTFILES_DIR/fish/.config/fish/fish_plugins"
+    [ -f "$manifest" ] || { warn "$manifest not found — skipping fish plugins"; return; }
+    local tmp=""
     if ! fish -c 'functions -q fisher' 2>/dev/null; then
         tmp="$(mktemp -d)"
         download "https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish" "$tmp/fisher.fish" \
             || { warn "could not download fisher — skipping fish plugins"; rm -rf "$tmp"; return; }
-        fisher_src="$tmp/fisher.fish"
         # Source (not copy) so `fisher install jorgebucaran/fisher` below can
         # install it cleanly as a managed plugin.
     fi
-    # Explicit args: bare `fisher install` errors out on newer fisher versions.
-    retry timeout 600 fish -c "${fisher_src:+source $fisher_src;} fisher install (cat ~/.config/fish/fish_plugins)" \
-        && ok "fish plugins installed (see ~/.config/fish/fish_plugins)" \
-        || warn "fisher failed — re-run 'fisher update' inside fish later"
+    local out status
+    set +e
+    out="$(timeout 600 fish -c "${tmp:+source $tmp/fisher.fish;} fisher install (cat $manifest)" 2>&1)"
+    status=$?
+    set -e
+    if [ "$status" -ne 0 ]; then
+        # fisher refuses to overwrite files it has no record of (stale plugin
+        # files from a wiped/lost fisher state). Remove exactly the files it
+        # complains about — all under ~/.config/fish — and retry once.
+        local conflicts
+        conflicts="$(printf '%s\n' "$out" | awk '/^fisher: Cannot install/{flag=1; next} /^fisher:/{flag=0} flag && /^[[:space:]]+\//{print $1}' | grep "^$HOME/.config/fish/" | sort -u)"
+        if [ -n "$conflicts" ]; then
+            warn "removing stale plugin files fisher refuses to overwrite:"
+            printf '%s\n' "$conflicts" | while IFS= read -r f; do
+                warn "  rm -rf $f"
+                rm -rf "$f"
+            done
+            out="$(retry timeout 600 fish -c "${tmp:+source $tmp/fisher.fish;} fisher install (cat $manifest)" 2>&1)" \
+                && status=0 || status=1
+        fi
+    fi
+    [ "$status" -eq 0 ] && ok "fish plugins installed (see $manifest)" \
+        || { warn "fisher failed — re-run 'fisher update' inside fish later"; printf '%s\n' "$out" | tail -5 >&2; }
     # Bulk install drops fisher itself when it is running from a sourced
     # (not yet installed) file — install it explicitly.
-    if [ -n "$fisher_src" ] && ! fish -c 'functions -q fisher' 2>/dev/null; then
-        fish -c "source $fisher_src; fisher install jorgebucaran/fisher" \
+    if [ -n "$tmp" ] && ! fish -c 'functions -q fisher' 2>/dev/null; then
+        fish -c "source $tmp/fisher.fish; fisher install jorgebucaran/fisher" \
             && ok "fisher installed" || warn "could not install fisher itself"
     fi
     if [ -n "$tmp" ]; then rm -rf "$tmp"; fi
+    FISHER_OUTPUT="$out"   # migrate_tide checks whether tide was (re)installed
+    # Restore the stowed fish_plugins link if fisher removed/replaced it.
+    if [ ! -L "$HOME/.config/fish/fish_plugins" ]; then
+        stow_backup_conflicts fish
+        stow --restow --no-folding --dir="$DOTFILES_DIR" --target="$HOME" fish >/dev/null
+    fi
 }
 
 # --------------------------------------------------------------------------
 # 6. Tide prompt config migration
 # --------------------------------------------------------------------------
+FISHER_OUTPUT=""   # install_fish_plugins records its output here
 migrate_tide() {
     bin_works fish --version || return 0
     step "Migrating tide prompt configuration"
@@ -462,10 +498,14 @@ migrate_tide() {
         warn "$vars_file not found — skipping tide migration"
         return
     fi
-    # NB: tide seeds its own universal-variable defaults on first load, so
-    # 'set -q tide_*' can't distinguish defaults from a migrated config —
-    # use our own marker variable instead.
-    if [ "${TIDE_FORCE:-0}" != "1" ] && fish -c 'set -q _tide_dotfiles_migrated' 2>/dev/null; then
+    # NB: tide seeds its own universal-variable defaults on first load, and
+    # `_tide_init_install` resets them again on every fresh tide install —
+    # so 'set -q tide_*' can't distinguish defaults from a migrated config.
+    # Apply when: TIDE_FORCE=1, our marker is missing, or fisher just
+    # (re)installed tide this run.
+    if [ "${TIDE_FORCE:-0}" != "1" ] \
+        && ! printf '%s' "$FISHER_OUTPUT" | grep -q 'Installing.*tide' \
+        && fish -c 'set -q _tide_dotfiles_migrated' 2>/dev/null; then
         skip "tide already configured (set TIDE_FORCE=1 to re-apply)"
         return
     fi
