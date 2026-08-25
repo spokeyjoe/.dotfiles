@@ -433,45 +433,48 @@ install_fish_plugins() {
     # it outright when its own state (universal vars) is wiped.
     local manifest="$DOTFILES_DIR/fish/.config/fish/fish_plugins"
     [ -f "$manifest" ] || { warn "$manifest not found — skipping fish plugins"; return; }
-    local tmp=""
-    if ! fish -c 'functions -q fisher' 2>/dev/null; then
-        tmp="$(mktemp -d)"
-        download "https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish" "$tmp/fisher.fish" \
-            || { warn "could not download fisher — skipping fish plugins"; rm -rf "$tmp"; return; }
-        # Source (not copy) so `fisher install jorgebucaran/fisher` below can
-        # install it cleanly as a managed plugin.
+
+    # Fast path: fisher works and the installed set matches the manifest.
+    if fish -c 'functions -q fisher; and fisher list' 2>/dev/null | grep -v '^$' | sort -f \
+        | cmp -s - <(grep -vE '^\s*(#|$)' "$manifest" | sort -f); then
+        skip "fish plugins up to date"
+        return
     fi
-    local out status
-    set +e
-    out="$(timeout 600 fish -c "${tmp:+source $tmp/fisher.fish;} fisher install (cat $manifest)" 2>&1)"
-    status=$?
-    set -e
-    if [ "$status" -ne 0 ]; then
-        # fisher refuses to overwrite files it has no record of (stale plugin
-        # files from a wiped/lost fisher state). Remove exactly the files it
-        # complains about — all under ~/.config/fish — and retry once.
-        local conflicts
-        conflicts="$(printf '%s\n' "$out" | awk '/^fisher: Cannot install/{flag=1; next} /^fisher:/{flag=0} flag && /^[[:space:]]+\//{print $1}' | grep "^$HOME/.config/fish/" | sort -u)"
-        if [ -n "$conflicts" ]; then
-            warn "removing stale plugin files fisher refuses to overwrite:"
-            printf '%s\n' "$conflicts" | while IFS= read -r f; do
-                warn "  rm -rf $f"
-                rm -rf "$f"
-            done
-            out="$(retry timeout 600 fish -c "${tmp:+source $tmp/fisher.fish;} fisher install (cat $manifest)" 2>&1)" \
-                && status=0 || status=1
-        fi
-    fi
-    [ "$status" -eq 0 ] && ok "fish plugins installed (see $manifest)" \
-        || { warn "fisher failed — re-run 'fisher update' inside fish later"; printf '%s\n' "$out" | tail -5 >&2; }
+
+    # fisher keeps its ownership state in universal variables and refuses to
+    # touch files it has no record of. Don't negotiate: wipe that state and
+    # every plugin file, then do one clean install.
+    warn "fisher state missing/stale — resetting and reinstalling plugins"
+    fish -c 'set -e _fisher_plugins; for v in (set --universal --names | string match "_fisher_*_files"); set -e $v; end' 2>/dev/null || true
+    # Plugin files = anything in these dirs NOT symlinked from the repo.
+    # (The repo only owns the whitelisted functions; the rest is disposable
+    # machine state per fish/.gitignore.)
+    local sub f
+    for sub in functions conf.d completions themes; do
+        [ -d "$HOME/.config/fish/$sub" ] || continue
+        while IFS= read -r f; do
+            case "$(readlink -f "$f" 2>/dev/null)" in
+                "$DOTFILES_DIR/"*) ;;          # stowed repo file — keep
+                *) rm -rf "$f" ;;
+            esac
+        done < <(find "$HOME/.config/fish/$sub" -mindepth 1 -maxdepth 1)
+    done
+    TIDE_REINSTALLED=1   # tide was wiped too → migrate_tide must re-apply
+
+    local tmp; tmp="$(mktemp -d)"
+    download "https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish" "$tmp/fisher.fish" \
+        || { warn "could not download fisher — skipping fish plugins"; rm -rf "$tmp"; return; }
+    # Source (not copy) fisher so it can install itself as a managed plugin.
+    retry timeout 600 fish -c "source $tmp/fisher.fish; fisher install (cat $manifest)" \
+        && ok "fish plugins installed (see $manifest)" \
+        || warn "fisher failed — re-run 'fisher install (cat $manifest)' inside fish"
     # Bulk install drops fisher itself when it is running from a sourced
     # (not yet installed) file — install it explicitly.
-    if [ -n "$tmp" ] && ! fish -c 'functions -q fisher' 2>/dev/null; then
+    if ! fish -c 'functions -q fisher' 2>/dev/null; then
         fish -c "source $tmp/fisher.fish; fisher install jorgebucaran/fisher" \
             && ok "fisher installed" || warn "could not install fisher itself"
     fi
-    if [ -n "$tmp" ]; then rm -rf "$tmp"; fi
-    FISHER_OUTPUT="$out"   # migrate_tide checks whether tide was (re)installed
+    rm -rf "$tmp"
     # Restore the stowed fish_plugins link if fisher removed/replaced it.
     if [ ! -L "$HOME/.config/fish/fish_plugins" ]; then
         stow_backup_conflicts fish
@@ -482,7 +485,7 @@ install_fish_plugins() {
 # --------------------------------------------------------------------------
 # 6. Tide prompt config migration
 # --------------------------------------------------------------------------
-FISHER_OUTPUT=""   # install_fish_plugins records its output here
+TIDE_REINSTALLED=0   # install_fish_plugins sets this when tide was wiped
 migrate_tide() {
     bin_works fish --version || return 0
     step "Migrating tide prompt configuration"
@@ -492,12 +495,10 @@ migrate_tide() {
         return
     fi
     # NB: tide seeds its own universal-variable defaults on first load, and
-    # `_tide_init_install` resets them again on every fresh tide install —
-    # so 'set -q tide_*' can't distinguish defaults from a migrated config.
-    # Apply when: TIDE_FORCE=1, our marker is missing, or fisher just
-    # (re)installed tide this run.
-    if [ "${TIDE_FORCE:-0}" != "1" ] \
-        && ! printf '%s' "$FISHER_OUTPUT" | grep -q 'Installing.*tide' \
+    # resets them again on every fresh tide install — so 'set -q tide_*'
+    # can't distinguish defaults from a migrated config. Apply when:
+    # TIDE_FORCE=1, our marker is missing, or tide was just reinstalled.
+    if [ "${TIDE_FORCE:-0}" != "1" ] && [ "$TIDE_REINSTALLED" != "1" ] \
         && fish -c 'set -q _tide_dotfiles_migrated' 2>/dev/null; then
         skip "tide already configured (set TIDE_FORCE=1 to re-apply)"
         return
