@@ -28,13 +28,6 @@ if status --is-interactive
     set -gx GIT_EDITOR $EDITOR
 end
 
-# --- Proxy workaround: no-alpn curl ---
-# Some proxies kill curl's default TLS ClientHello (SSL "unexpected eof").
-# ~/.curlrc (stowed) covers the curl CLI; brew ignores it unless told:
-if test -f ~/.curlrc
-    set -gx HOMEBREW_CURLRC ~/.curlrc
-end
-
 # --- Brewed glibc locale fix ---
 # A user-local ~/.linuxbrew installs its own glibc, whose locale archive is
 # empty — tmux and friends then refuse to start ("invalid LC_ALL, LC_CTYPE

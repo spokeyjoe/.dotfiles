@@ -22,14 +22,11 @@
 #   8. Headless lazy.nvim restore from lockfile + treesitter parser build
 #
 # Assumes network access is already configured (e.g. https_proxy exported).
-# Network note: some proxies (Loon) kill curl's default TLS ClientHello;
-# --no-alpn fixes it. The curl/.curlrc package carries this for interactive
-# use; brew gets it via HOMEBREW_CURLRC below.
 #
 # Useful overrides (environment variables):
 #   DOTFILES_DIR   default: ~/.dotfiles
 #   DOTFILES_REPO  default: https://github.com/spokeyjoe/.dotfiles.git
-#   STOW_PACKAGES  default: "fish tmux nvim lazygit clang-format kitty curl pi"
+#   STOW_PACKAGES  default: "fish tmux nvim lazygit clang-format kitty pi"
 #   BREW_PACKAGES  default: "fish tmux fzf"
 #   TIDE_FORCE=1   re-apply tide_vars.fish even if tide is already configured
 #   SKIP_BREW=1 / SKIP_STOW=1 / SKIP_TMUX=1 / SKIP_FISH_PLUGINS=1 / \
@@ -42,11 +39,10 @@ set -euo pipefail
 # --------------------------------------------------------------------------
 OS="$(uname -s)"        # Linux | Darwin
 ARCH="$(uname -m)"      # x86_64 | arm64/aarch64
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 DOTFILES_DIR="${DOTFILES_DIR:-$HOME/.dotfiles}"
 DOTFILES_REPO="${DOTFILES_REPO:-https://github.com/spokeyjoe/.dotfiles.git}"
-STOW_PACKAGES="${STOW_PACKAGES:-fish tmux nvim lazygit clang-format kitty curl pi}"
+STOW_PACKAGES="${STOW_PACKAGES:-fish tmux nvim lazygit clang-format kitty pi}"
 BREW_PACKAGES="${BREW_PACKAGES:-fish tmux fzf}"
 LINUXBREW_DIR="$HOME/.linuxbrew"
 TPM_DIR="$HOME/.tmux/plugins/tpm"
@@ -62,8 +58,6 @@ export PATH="$LOCAL_BIN:$PATH"
 export HOMEBREW_NO_AUTO_UPDATE=1
 export HOMEBREW_NO_INSTALL_CLEANUP=1
 export HOMEBREW_NO_ANALYTICS=1
-# brew ignores ~/.curlrc; give it the repo's (no-alpn) explicitly.
-[ -f "$SCRIPT_DIR/curl/.curlrc" ] && export HOMEBREW_CURLRC="$SCRIPT_DIR/curl/.curlrc"
 
 # Brewed glibc (user-local ~/.linuxbrew) ships no locale archive, which makes
 # tmux refuse to start — point it at the system locales.
@@ -122,11 +116,10 @@ git_clone() {
     done
 }
 
-# download <url> <dest> — --no-alpn is required behind ALPN-killing proxies.
-# The speed-limit flags kill stalled transfers (a connected-but-frozen proxy
-# would otherwise hang forever); curl then retries per --retry.
+# download <url> <dest> — retries + a stall detector so a frozen proxy
+# connection can't hang the script forever.
 download() {
-    curl -fsSL --no-alpn --retry 3 --connect-timeout 20 \
+    curl -fsSL --retry 3 --connect-timeout 20 \
         --speed-limit 1024 --speed-time 30 -o "$2" "$1"
 }
 

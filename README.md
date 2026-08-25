@@ -36,23 +36,12 @@ verified by actually running them (not just presence on PATH), broken
 brewed-perl stow bottles fall back to the GNU tarball, and brewed-glibc
 locale/CA quirks are worked around automatically.
 
-## Proxy note (Loon / ALPN)
-
-Some proxies (observed with Loon on iOS) kill curl's default TLS ClientHello
-— the connection dies with `SSL routines::unexpected eof` before any data
-flows, while GnuTLS-based tools (git, wget) pass. Disabling ALPN fixes it.
-The stowed `curl/.curlrc` sets `no-alpn` for the curl CLI, and the bootstrap
-points brew at an equivalent curlrc via `HOMEBREW_CURLRC` (fish config does
-the same for interactive use). If this affects you, the real fix is on the
-proxy side (check Loon's MITM list / node for `*.github.com`,
-`*.githubusercontent.com`, `pypi.org`).
-
 ### Overrides
 
 | Variable         | Default                                            | Purpose                     |
 | ---------------- | -------------------------------------------------- | --------------------------- |
 | `DOTFILES_DIR`   | `~/.dotfiles`                                      | repo location               |
-| `STOW_PACKAGES`  | `fish tmux nvim lazygit clang-format kitty curl pi` | packages to stow          |
+| `STOW_PACKAGES`  | `fish tmux nvim lazygit clang-format kitty pi`      | packages to stow          |
 | `BREW_PACKAGES`  | `fish tmux stow neovim fzf`                        | formulas to install         |
 | `TIDE_FORCE=1`   | —                                                  | re-apply tide config        |
 | `SKIP_*=1`       | —                                                  | `BREW`/`STOW`/`TMUX`/`FISH_PLUGINS`/`DEFAULT_SHELL`/`NVIM_SYNC` |
