@@ -52,7 +52,7 @@ proxy side (check Loon's MITM list / node for `*.github.com`,
 | Variable         | Default                                            | Purpose                     |
 | ---------------- | -------------------------------------------------- | --------------------------- |
 | `DOTFILES_DIR`   | `~/.dotfiles`                                      | repo location               |
-| `STOW_PACKAGES`  | `fish tmux nvim lazygit clang-format kitty curl`   | packages to stow            |
+| `STOW_PACKAGES`  | `fish tmux nvim lazygit clang-format kitty curl pi` | packages to stow          |
 | `BREW_PACKAGES`  | `fish tmux stow neovim fzf`                        | formulas to install         |
 | `TIDE_FORCE=1`   | —                                                  | re-apply tide config        |
 | `SKIP_*=1`       | —                                                  | `BREW`/`STOW`/`TMUX`/`FISH_PLUGINS`/`DEFAULT_SHELL`/`NVIM_SYNC` |

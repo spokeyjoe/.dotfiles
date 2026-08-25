@@ -29,7 +29,7 @@
 # Useful overrides (environment variables):
 #   DOTFILES_DIR   default: ~/.dotfiles
 #   DOTFILES_REPO  default: https://github.com/spokeyjoe/.dotfiles.git
-#   STOW_PACKAGES  default: "fish tmux nvim lazygit clang-format kitty curl"
+#   STOW_PACKAGES  default: "fish tmux nvim lazygit clang-format kitty curl pi"
 #   BREW_PACKAGES  default: "fish tmux fzf"
 #   TIDE_FORCE=1   re-apply tide_vars.fish even if tide is already configured
 #   SKIP_BREW=1 / SKIP_STOW=1 / SKIP_TMUX=1 / SKIP_FISH_PLUGINS=1 / \
@@ -46,7 +46,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 DOTFILES_DIR="${DOTFILES_DIR:-$HOME/.dotfiles}"
 DOTFILES_REPO="${DOTFILES_REPO:-https://github.com/spokeyjoe/.dotfiles.git}"
-STOW_PACKAGES="${STOW_PACKAGES:-fish tmux nvim lazygit clang-format kitty curl}"
+STOW_PACKAGES="${STOW_PACKAGES:-fish tmux nvim lazygit clang-format kitty curl pi}"
 BREW_PACKAGES="${BREW_PACKAGES:-fish tmux fzf}"
 LINUXBREW_DIR="$HOME/.linuxbrew"
 TPM_DIR="$HOME/.tmux/plugins/tpm"
