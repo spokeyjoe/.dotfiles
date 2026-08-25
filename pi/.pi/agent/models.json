@@ -1,0 +1,19 @@
+{
+  "providers": {
+    "opencode-go": {
+      "modelOverrides": {
+        "kimi-k3": {
+          "thinkingLevelMap": {
+            "off": null,
+            "minimal": null,
+            "low": "low",
+            "medium": null,
+            "high": "high",
+            "xhigh": null,
+            "max": "max"
+          }
+        }
+      }
+    }
+  }
+}
