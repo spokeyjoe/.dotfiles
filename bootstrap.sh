@@ -3,32 +3,37 @@
 # bootstrap.sh — set up Joe's dotfiles environment on a fresh machine.
 #
 #   * No sudo required: CLI tools come from a user-local Homebrew
-#     (~/.linuxbrew on Linux); neovim uses the official prebuilt tarball.
+#     (~/.linuxbrew on Linux); neovim/tree-sitter use official binaries
+#     or user-local builds.
 #   * Idempotent: anything already installed/working is skipped.
 #   * Safe to re-run at any time.
 #
 # Steps:
 #   1. Locate (or install) Homebrew at ~/.linuxbrew
-#   2. Install CLI tools: fish tmux fzf (brew), stow (brew, GNU tarball
-#      fallback), neovim (prebuilt binary on Linux, brew on macOS)
+#   2. CLI tools: fish tmux fzf (brew), stow (brew, GNU tarball fallback),
+#      neovim (prebuilt tarball on Linux, brew on macOS), tree-sitter CLI
+#      (prebuilt binary, or cargo build on glibc < 2.39)
 #   3. Clone the dotfiles repo (if missing) and `stow` every package,
 #      backing up pre-existing conflicting files
 #   4. Install TPM (tmux plugin manager) + tmux plugins, headlessly
 #   5. Install fisher + fish plugins (tide, fzf.fish, z, ...)
 #   6. Migrate the tide prompt configuration (universal variables)
-#   7. Headless `nvim` plugin sync (lazy.nvim) — best effort
+#   7. Make fish the default interactive shell via ~/.bashrc
+#   8. Headless lazy.nvim restore from lockfile + treesitter parser build
 #
 # Assumes network access is already configured (e.g. https_proxy exported).
-# Downloads use curl with a wget fallback (some proxies kill OpenSSL
-# handshakes to github.com while GnuTLS-based clients still work).
+# Network note: some proxies (Loon) kill curl's default TLS ClientHello;
+# --no-alpn fixes it. The curl/.curlrc package carries this for interactive
+# use; brew gets it via HOMEBREW_CURLRC below.
 #
 # Useful overrides (environment variables):
 #   DOTFILES_DIR   default: ~/.dotfiles
 #   DOTFILES_REPO  default: https://github.com/spokeyjoe/.dotfiles.git
-#   STOW_PACKAGES  default: "fish tmux nvim lazygit clang-format kitty"
-#   BREW_PACKAGES  default: "fish tmux fzf"   (Linux; neovim added on macOS)
+#   STOW_PACKAGES  default: "fish tmux nvim lazygit clang-format kitty curl"
+#   BREW_PACKAGES  default: "fish tmux fzf"
 #   TIDE_FORCE=1   re-apply tide_vars.fish even if tide is already configured
-#   SKIP_BREW=1 / SKIP_STOW=1 / SKIP_TMUX=1 / SKIP_FISH_PLUGINS=1 / SKIP_NVIM_SYNC=1
+#   SKIP_BREW=1 / SKIP_STOW=1 / SKIP_TMUX=1 / SKIP_FISH_PLUGINS=1 / \
+#   SKIP_DEFAULT_SHELL=1 / SKIP_NVIM_SYNC=1
 
 set -euo pipefail
 
@@ -37,43 +42,44 @@ set -euo pipefail
 # --------------------------------------------------------------------------
 OS="$(uname -s)"        # Linux | Darwin
 ARCH="$(uname -m)"      # x86_64 | arm64/aarch64
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 DOTFILES_DIR="${DOTFILES_DIR:-$HOME/.dotfiles}"
 DOTFILES_REPO="${DOTFILES_REPO:-https://github.com/spokeyjoe/.dotfiles.git}"
-STOW_PACKAGES="${STOW_PACKAGES:-fish tmux nvim lazygit clang-format kitty}"
-if [ "$OS" = "Darwin" ]; then
-    BREW_PACKAGES="${BREW_PACKAGES:-fish tmux fzf neovim}"
-else
-    BREW_PACKAGES="${BREW_PACKAGES:-fish tmux fzf}"
-fi
+STOW_PACKAGES="${STOW_PACKAGES:-fish tmux nvim lazygit clang-format kitty curl}"
+BREW_PACKAGES="${BREW_PACKAGES:-fish tmux fzf}"
 LINUXBREW_DIR="$HOME/.linuxbrew"
 TPM_DIR="$HOME/.tmux/plugins/tpm"
 BACKUP_DIR="$HOME/.dotfiles-backup/$(date +%Y%m%d-%H%M%S)"
 LOCAL_OPT="$HOME/.local/opt"
 LOCAL_BIN="$HOME/.local/bin"
 
+NVIM_MIN_VERSION="0.12"     # required by nvim-treesitter's main branch
+TS_MIN_VERSION="0.26.1"     # required by nvim-treesitter's main branch
+TS_PREBUILD_GLIBC_MIN="2.39" # official tree-sitter binaries need this glibc
+
 export PATH="$LOCAL_BIN:$PATH"
 export HOMEBREW_NO_AUTO_UPDATE=1
 export HOMEBREW_NO_INSTALL_CLEANUP=1
 export HOMEBREW_NO_ANALYTICS=1
+# brew ignores ~/.curlrc; give it the repo's (no-alpn) explicitly.
+[ -f "$SCRIPT_DIR/curl/.curlrc" ] && export HOMEBREW_CURLRC="$SCRIPT_DIR/curl/.curlrc"
 
-# Brewed glibc (present in user-local ~/.linuxbrew setups) ships no locale
-# archive, which makes tmux refuse to start. Point it at the system locales.
+# Brewed glibc (user-local ~/.linuxbrew) ships no locale archive, which makes
+# tmux refuse to start — point it at the system locales.
 if [ -d "$LINUXBREW_DIR/Cellar/glibc" ] && [ -d /usr/lib/locale ]; then
     export LOCPATH="${LOCPATH:-/usr/lib/locale}"
 fi
 export LANG="${LANG:-en_US.UTF-8}"
 # Some machines export locales that were never generated (e.g. LC_NUMERIC=
-# zh_CN.UTF-8 on a minimal en_US system) — every perl/tmux call then spews
-# warnings or fails. Fall back to C.utf8 when the configured locale is broken.
-if [ -z "${LC_ALL:-}" ] && locale 2>&1 | grep -q "Cannot set"; then
-    if locale -a 2>/dev/null | grep -qi '^c\.utf8$'; then
-        export LC_ALL=C.utf8
-    fi
+# zh_CN.UTF-8) — every perl/tmux call then spews warnings. Fall back to C.utf8.
+if [ -z "${LC_ALL:-}" ] && locale 2>&1 | grep -q "Cannot set" \
+    && locale -a 2>/dev/null | grep -qi '^c\.utf8$'; then
+    export LC_ALL=C.utf8
 fi
 
 # --------------------------------------------------------------------------
-# Logging helpers
+# Helpers
 # --------------------------------------------------------------------------
 if [ -t 1 ]; then
     C_BLUE=$'\033[1;34m'; C_GREEN=$'\033[1;32m'; C_YELLOW=$'\033[1;33m'; C_RED=$'\033[1;31m'; C_OFF=$'\033[0m'
@@ -88,8 +94,12 @@ die()  { printf '%s  ✗ %s%s\n' "$C_RED" "$*" "$C_OFF" >&2; exit 1; }
 
 have()  { command -v "$1" >/dev/null 2>&1; }
 works() { "$@" >/dev/null 2>&1; }
+# Functional check: a binary must not only exist but actually run.
+bin_works() { local bin="$1"; shift; have "$bin" && works "$bin" "$@"; }
+# version_ge <have> <want> — true if $have >= $want (dot-separated numbers)
+version_ge() { [ "$(printf '%s\n%s\n' "$2" "$1" | sort -V | head -1)" = "$2" ]; }
 
-# Retry a command up to 3 times (flaky proxies, transient network errors).
+# Retry a command up to 3 times (the proxy flaps when iOS suspends Loon).
 retry() {
     local n=0
     until "$@"; do
@@ -100,10 +110,9 @@ retry() {
     done
 }
 
-# git clone with retries (proxies intermittently reset TLS handshakes).
-# Removes the half-cloned destination before each retry.
+# git clone with retries; removes the half-cloned destination before retrying.
 git_clone() {
-    local dest="${@: -1}" n=0
+    local dest="${*: -1}" n=0
     until git clone "$@"; do
         n=$((n + 1))
         [ "$n" -ge 3 ] && return 1
@@ -113,17 +122,9 @@ git_clone() {
     done
 }
 
-# download <url> <dest> — curl first, wget fallback (GnuTLS vs OpenSSL
-# handshake quirks behind some proxies).
+# download <url> <dest> — --no-alpn is required behind ALPN-killing proxies.
 download() {
-    local url="$1" dest="$2"
-    if have curl && curl -fsSL --retry 2 --connect-timeout 20 -o "$dest" "$url" 2>/dev/null; then
-        return 0
-    fi
-    if have wget && wget -q --tries=2 --timeout=30 -O "$dest" "$url" 2>/dev/null; then
-        return 0
-    fi
-    return 1
+    curl -fsSL --no-alpn --retry 3 --connect-timeout 20 -o "$2" "$1"
 }
 
 # --------------------------------------------------------------------------
@@ -146,28 +147,19 @@ find_brew() {
     return 1
 }
 
-install_brew() {
-    # No-sudo install: git clone of Homebrew into ~/.linuxbrew.
-    # (The official installer requires sudo on Linux for /home/linuxbrew.)
-    step "Installing Homebrew to $LINUXBREW_DIR (no sudo)"
-    have git || die "git is required to install Homebrew without sudo. Install git first."
-    if [ -e "$LINUXBREW_DIR" ]; then
-        die "$LINUXBREW_DIR exists but has no working bin/brew — please fix or remove it first."
-    fi
-    git_clone --depth 1 https://github.com/Homebrew/brew "$LINUXBREW_DIR"
-    BREW="$LINUXBREW_DIR/bin/brew"
-}
-
 setup_brew() {
     step "Locating Homebrew"
     if find_brew; then
         skip "Homebrew found at $BREW"
     else
-        case "$OS" in
-            Linux) install_brew ;;
-            Darwin) die "Homebrew not found. Install it from https://brew.sh (needs sudo on macOS), then re-run." ;;
-            *) die "Unsupported OS: $OS" ;;
-        esac
+        [ "$OS" = "Linux" ] || die "Homebrew not found — install it from https://brew.sh first."
+        # No-sudo install: git clone of Homebrew into ~/.linuxbrew (the
+        # official installer needs sudo on Linux for /home/linuxbrew).
+        have git || die "git is required to install Homebrew without sudo."
+        [ -e "$LINUXBREW_DIR" ] && die "$LINUXBREW_DIR exists but has no working bin/brew — fix or remove it first."
+        step "Installing Homebrew to $LINUXBREW_DIR (no sudo)"
+        git_clone --depth 1 https://github.com/Homebrew/brew "$LINUXBREW_DIR"
+        BREW="$LINUXBREW_DIR/bin/brew"
     fi
     eval "$("$BREW" shellenv)"
     # brew shellenv prepends $LINUXBREW_DIR/bin; keep ~/.local/bin first so
@@ -181,9 +173,8 @@ setup_brew() {
 # User-local brew prefixes sometimes miss the openssl -> ca-certificates
 # symlink, which breaks TLS verification for every brewed tool (git, curl).
 fix_brew_ca() {
-    [ -n "$BREW" ] || return 0
     local prefix ca ossl
-    prefix="$($BREW --prefix 2>/dev/null)" || return 0
+    prefix="$("$BREW" --prefix 2>/dev/null)" || return 0
     ca="$prefix/etc/ca-certificates/cert.pem"
     [ -f "$ca" ] || return 0
     for ossl in "$prefix"/etc/openssl@3 "$prefix"/etc/openssl; do
@@ -197,38 +188,25 @@ fix_brew_ca() {
 # --------------------------------------------------------------------------
 # 2. CLI tools
 # --------------------------------------------------------------------------
-
-# Functional check: a binary must not only exist but actually run.
-bin_works() {
-    local bin="$1"; shift
-    have "$bin" && works "$bin" "$@"
-}
-
 install_brew_packages() {
     [ "${SKIP_BREW:-0}" = "1" ] && { skip "brew packages (SKIP_BREW=1)"; return; }
     step "Installing CLI tools via brew: $BREW_PACKAGES"
-    local pkg bin
+    local pkg probe
     for pkg in $BREW_PACKAGES; do
-        bin="$pkg"
-        [ "$pkg" = "neovim" ] && bin="nvim"
-        local probe_args=(--version)
-        [ "$bin" = "tmux" ] && probe_args=(-V)
-        if bin_works "$bin" "${probe_args[@]}"; then
-            skip "$pkg ($(command -v "$bin"))"
+        probe="--version"; [ "$pkg" = "tmux" ] && probe="-V"
+        if bin_works "$pkg" "$probe"; then
+            skip "$pkg ($(command -v "$pkg"))"
         else
             echo "  → brew install $pkg"
             retry "$BREW" install "$pkg" || warn "brew install $pkg failed"
-            if bin_works "$bin" "${probe_args[@]}"; then
-                ok "$pkg installed"
-            else
-                warn "$pkg installed but not working — continuing anyway"
-            fi
+            bin_works "$pkg" "$probe" && ok "$pkg installed" \
+                || warn "$pkg installed but not working — continuing anyway"
         fi
     done
 }
 
 # stow needs special care: the brew bottle hardcodes brewed-perl paths and is
-# broken whenever brewed perl version drifts. Fall back to the GNU tarball.
+# broken whenever brewed perl version drifts — fall back to the GNU tarball.
 install_stow() {
     [ "${SKIP_BREW:-0}" = "1" ] && { skip "stow (SKIP_BREW=1)"; return; }
     step "Installing GNU stow"
@@ -236,16 +214,10 @@ install_stow() {
         skip "stow ($(command -v stow))"
         return
     fi
-    if [ -n "$BREW" ]; then
-        echo "  → brew install stow"
-        retry "$BREW" install stow || true
-        if bin_works stow --version; then ok "stow installed (brew)"; return; fi
-        warn "brewed stow is broken (known bottle/perl mismatch) — rebuilding from source"
-        retry "$BREW" reinstall --build-from-source stow || true
-        if bin_works stow --version; then ok "stow installed (brew, from source)"; return; fi
-    fi
+    retry "$BREW" install stow || true
+    if bin_works stow --version; then ok "stow installed (brew)"; return; fi
     if [ "$OS" = "Linux" ] && have perl && have make; then
-        warn "falling back to GNU stow tarball → $LOCAL_BIN"
+        warn "brewed stow broken (bottle/perl mismatch) — using the GNU tarball"
         local tmp; tmp="$(mktemp -d)"
         download "https://ftp.gnu.org/gnu/stow/stow-latest.tar.gz" "$tmp/stow.tar.gz" \
             || die "could not download GNU stow"
@@ -259,15 +231,24 @@ install_stow() {
 }
 
 # neovim: official prebuilt tarball on Linux (brew bottles only work in
-# /home/linuxbrew/.linuxbrew; a user-local prefix would mean a slow and
-# fragile source build). brew on macOS.
+# /home/linuxbrew/.linuxbrew; a user-local prefix means a slow, fragile
+# source build). brew on macOS.
+nvim_version_ok() {
+    bin_works nvim --version || return 1
+    local ver
+    ver="$(nvim --version | head -1 | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' | head -1)"
+    [ -n "$ver" ] && version_ge "$ver" "$NVIM_MIN_VERSION"
+}
+
 install_neovim() {
     [ "${SKIP_BREW:-0}" = "1" ] && { skip "neovim (SKIP_BREW=1)"; return; }
-    step "Installing neovim"
-    if bin_works nvim --version; then
+    step "Installing neovim (>= $NVIM_MIN_VERSION)"
+    if nvim_version_ok; then
         skip "neovim ($(command -v nvim))"
         return
     fi
+    bin_works nvim --version \
+        && warn "nvim ($(command -v nvim)) is older than $NVIM_MIN_VERSION — installing a newer one"
     if [ "$OS" = "Darwin" ]; then
         retry "$BREW" install neovim || die "brew install neovim failed"
         ok "neovim installed (brew)"
@@ -275,8 +256,8 @@ install_neovim() {
     fi
     local narch
     case "$ARCH" in
-        x86_64)          narch="x86_64" ;;
-        aarch64|arm64)   narch="arm64" ;;
+        x86_64)        narch="x86_64" ;;
+        aarch64|arm64) narch="arm64" ;;
         *) die "unsupported architecture for prebuilt neovim: $ARCH" ;;
     esac
     local tmp; tmp="$(mktemp -d)"
@@ -287,8 +268,78 @@ install_neovim() {
     tar xzf "$tmp/nvim.tar.gz" -C "$LOCAL_OPT"
     ln -sf "$LOCAL_OPT/nvim-linux-$narch/bin/nvim" "$LOCAL_BIN/nvim"
     rm -rf "$tmp"
+    hash -r
     bin_works nvim --version || die "neovim installed but not running"
     ok "neovim installed ($LOCAL_BIN/nvim)"
+}
+
+# tree-sitter CLI: required (not from npm) by nvim-treesitter's main branch
+# to compile parsers. Prebuilt binaries need glibc >= 2.39; on older systems
+# (e.g. Ubuntu 22.04) build it with a user-local rustup toolchain instead.
+install_treesitter_cli() {
+    [ "${SKIP_BREW:-0}" = "1" ] && { skip "tree-sitter CLI (SKIP_BREW=1)"; return; }
+    step "Installing tree-sitter CLI (>= $TS_MIN_VERSION)"
+    if bin_works tree-sitter --version; then
+        local v
+        v="$(tree-sitter --version | grep -oE '[0-9.]+' | head -1)"
+        if [ -n "$v" ] && version_ge "$v" "$TS_MIN_VERSION"; then
+            skip "tree-sitter CLI $v ($(command -v tree-sitter))"
+            return
+        fi
+        warn "tree-sitter CLI $v is older than $TS_MIN_VERSION — upgrading"
+    fi
+    if [ "$OS" = "Darwin" ]; then
+        retry "$BREW" install tree-sitter-cli || die "brew install tree-sitter-cli failed"
+        ok "tree-sitter CLI installed (brew)"
+        return
+    fi
+    local glibc
+    glibc="$(ldd --version 2>/dev/null | head -1 | grep -oE '[0-9]+\.[0-9]+' | tail -1)"
+    if [ -n "$glibc" ] && version_ge "$glibc" "$TS_PREBUILD_GLIBC_MIN"; then
+        local tarch tmp
+        case "$ARCH" in
+            x86_64)        tarch="x64" ;;
+            aarch64|arm64) tarch="arm64" ;;
+            *) die "unsupported architecture for prebuilt tree-sitter: $ARCH" ;;
+        esac
+        tmp="$(mktemp -d)"
+        download "https://github.com/tree-sitter/tree-sitter/releases/latest/download/tree-sitter-linux-$tarch.gz" "$tmp/ts.gz" \
+            || die "could not download tree-sitter CLI"
+        mkdir -p "$LOCAL_BIN"
+        gunzip -c "$tmp/ts.gz" > "$LOCAL_BIN/tree-sitter"
+        chmod +x "$LOCAL_BIN/tree-sitter"
+        rm -rf "$tmp"
+    else
+        warn "system glibc $glibc < $TS_PREBUILD_GLIBC_MIN — building tree-sitter CLI from source"
+        ensure_rust
+        # --no-default-features skips qjs-rt (QuickJS/bindgen, needs libclang);
+        # nvim-treesitter only needs `tree-sitter build`.
+        echo "  → cargo install tree-sitter-cli (a few minutes, one time)"
+        retry cargo install tree-sitter-cli --locked --no-default-features \
+            || die "cargo install tree-sitter-cli failed"
+        ln -sf "$HOME/.cargo/bin/tree-sitter" "$LOCAL_BIN/tree-sitter"
+    fi
+    hash -r
+    bin_works tree-sitter --version || die "tree-sitter CLI installed but not running"
+    ok "tree-sitter CLI $(tree-sitter --version | grep -oE '[0-9.]+' | head -1) installed"
+}
+
+ensure_rust() {
+    # User-local Rust toolchain via rustup (no sudo, no mirrors).
+    if [ -x "$HOME/.cargo/bin/cargo" ]; then
+        export PATH="$HOME/.cargo/bin:$PATH"; hash -r
+    fi
+    bin_works cargo --version && return 0
+    step "Installing Rust toolchain (rustup, minimal)"
+    local tmp; tmp="$(mktemp -d)"
+    download "https://static.rust-lang.org/rustup/dist/x86_64-unknown-linux-gnu/rustup-init" "$tmp/rustup-init" \
+        || die "could not download rustup-init"
+    chmod +x "$tmp/rustup-init"
+    "$tmp/rustup-init" -y --quiet --profile minimal --default-toolchain stable
+    rm -rf "$tmp"
+    export PATH="$HOME/.cargo/bin:$PATH"; hash -r
+    bin_works cargo --version || die "rustup installed but cargo not working"
+    ok "rust $(rustc --version | grep -oE '[0-9.]+' | head -1) installed"
 }
 
 # --------------------------------------------------------------------------
@@ -312,10 +363,8 @@ stow_backup_conflicts() {
     while IFS= read -r rel; do
         rel="${rel#./}"
         target="$HOME/$rel"
-        # Not present at all → no conflict
         [ -e "$target" ] || [ -L "$target" ] || continue
-        # Resolves into the dotfiles repo (already stowed, possibly via a
-        # folded directory symlink) → no conflict
+        # Resolves into the dotfiles repo (already stowed) → no conflict
         if [ -e "$target" ]; then
             case "$(readlink -f "$target")" in
                 "$DOTFILES_DIR/"*) continue ;;
@@ -377,31 +426,26 @@ install_fish_plugins() {
     [ "${SKIP_FISH_PLUGINS:-0}" = "1" ] && { skip "fish plugins (SKIP_FISH_PLUGINS=1)"; return; }
     bin_works fish --version || { warn "fish not working — skipping fish plugins"; return; }
     step "Installing fisher + fish plugins"
-    local fisher_src=""
+    local fisher_src="" tmp=""
     if ! fish -c 'functions -q fisher' 2>/dev/null; then
-        local tmp; tmp="$(mktemp -d)"
-        if download "https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish" "$tmp/fisher.fish"; then
-            fisher_src="$tmp/fisher.fish"
-        else
-            warn "raw.githubusercontent.com unreachable — cloning fisher instead"
-            git_clone --depth 1 -q https://github.com/jorgebucaran/fisher "$tmp/fisher"
-            fisher_src="$tmp/fisher/functions/fisher.fish"
-        fi
-        # Source (not copy) fisher so `fisher install jorgebucaran/fisher`
-        # below can install it cleanly as a managed plugin.
+        tmp="$(mktemp -d)"
+        download "https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish" "$tmp/fisher.fish" \
+            || { warn "could not download fisher — skipping fish plugins"; rm -rf "$tmp"; return; }
+        fisher_src="$tmp/fisher.fish"
+        # Source (not copy) so `fisher install jorgebucaran/fisher` below can
+        # install it cleanly as a managed plugin.
     fi
-    # Install every plugin listed in fish_plugins (explicit args; bare
-    # `fisher install` errors out on newer fisher versions).
+    # Explicit args: bare `fisher install` errors out on newer fisher versions.
     retry fish -c "${fisher_src:+source $fisher_src;} fisher install (cat ~/.config/fish/fish_plugins)" \
         && ok "fish plugins installed (see ~/.config/fish/fish_plugins)" \
         || warn "fisher failed — re-run 'fisher update' inside fish later"
     # Bulk install drops fisher itself when it is running from a sourced
     # (not yet installed) file — install it explicitly.
-    if [ -n "${fisher_src:-}" ] && ! fish -c 'functions -q fisher' 2>/dev/null; then
+    if [ -n "$fisher_src" ] && ! fish -c 'functions -q fisher' 2>/dev/null; then
         fish -c "source $fisher_src; fisher install jorgebucaran/fisher" \
             && ok "fisher installed" || warn "could not install fisher itself"
     fi
-    [ -n "${fisher_src:-}" ] && rm -rf "$(dirname "$(dirname "$fisher_src")")" 2>/dev/null || true
+    if [ -n "$tmp" ]; then rm -rf "$tmp"; fi
 }
 
 # --------------------------------------------------------------------------
@@ -463,22 +507,27 @@ if [[ \$- == *i* ]] && [[ -z "\${NO_FISH:-}" ]] && [[ -x "$fish_bin" ]]; then
 fi
 # <<< dotfiles: exec fish <<<
 EOF
-    ok "~/.bashrc now execs $fish_bin for interactive shells"
+    ok "added fish exec block to $HOME/.bashrc"
 }
 
 # --------------------------------------------------------------------------
-# 8. nvim plugin sync (best effort)
+# 8. nvim plugin restore (best effort)
 # --------------------------------------------------------------------------
 sync_nvim() {
     [ "${SKIP_NVIM_SYNC:-0}" = "1" ] && { skip "nvim sync (SKIP_NVIM_SYNC=1)"; return; }
     bin_works nvim --version || return 0
     step "Installing neovim plugins (lazy.nvim restore from lockfile, headless)"
-    # NB: `restore`, not `sync` — sync also *updates* past lazy-lock.json
-    # (e.g. jumps nvim-treesitter to the incompatible new `main` branch).
-    if timeout 600 nvim --headless "+Lazy! restore" +qa </dev/null >/dev/null 2>&1; then
-        ok "neovim plugins restored from lazy-lock.json"
-    else
+    # NB: `restore`, not `sync` — sync also *updates* past lazy-lock.json.
+    if ! timeout 600 nvim --headless "+Lazy! restore" +qa </dev/null >/dev/null 2>&1; then
         warn "headless lazy.nvim restore failed — open nvim once and run :Lazy restore"
+        return
+    fi
+    # Second headless run: lets the treesitter config build parsers (it waits
+    # when headless) and acts as a startup sanity check.
+    if timeout 600 nvim --headless +qa </dev/null >/dev/null 2>&1; then
+        ok "neovim plugins restored from lazy-lock.json, treesitter parsers built"
+    else
+        warn "neovim restored, but a plain headless startup failed — check :checkhealth"
     fi
 }
 
@@ -496,6 +545,7 @@ main() {
     install_brew_packages
     install_stow
     install_neovim
+    install_treesitter_cli
     clone_dotfiles
     stow_packages
     install_tpm
