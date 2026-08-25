@@ -113,7 +113,7 @@ retry() {
 # git clone with retries; removes the half-cloned destination before retrying.
 git_clone() {
     local dest="${*: -1}" n=0
-    until git clone "$@"; do
+    until timeout 300 git clone "$@"; do
         n=$((n + 1))
         [ "$n" -ge 3 ] && return 1
         warn "retrying ($n/3): git clone $*"
@@ -123,8 +123,11 @@ git_clone() {
 }
 
 # download <url> <dest> — --no-alpn is required behind ALPN-killing proxies.
+# The speed-limit flags kill stalled transfers (a connected-but-frozen proxy
+# would otherwise hang forever); curl then retries per --retry.
 download() {
-    curl -fsSL --no-alpn --retry 3 --connect-timeout 20 -o "$2" "$1"
+    curl -fsSL --no-alpn --retry 3 --connect-timeout 20 \
+        --speed-limit 1024 --speed-time 30 -o "$2" "$1"
 }
 
 # --------------------------------------------------------------------------
@@ -436,7 +439,7 @@ install_fish_plugins() {
         # install it cleanly as a managed plugin.
     fi
     # Explicit args: bare `fisher install` errors out on newer fisher versions.
-    retry fish -c "${fisher_src:+source $fisher_src;} fisher install (cat ~/.config/fish/fish_plugins)" \
+    retry timeout 600 fish -c "${fisher_src:+source $fisher_src;} fisher install (cat ~/.config/fish/fish_plugins)" \
         && ok "fish plugins installed (see ~/.config/fish/fish_plugins)" \
         || warn "fisher failed — re-run 'fisher update' inside fish later"
     # Bulk install drops fisher itself when it is running from a sourced

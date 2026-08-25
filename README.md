@@ -57,6 +57,27 @@ proxy side (check Loon's MITM list / node for `*.github.com`,
 | `TIDE_FORCE=1`   | —                                                  | re-apply tide config        |
 | `SKIP_*=1`       | —                                                  | `BREW`/`STOW`/`TMUX`/`FISH_PLUGINS`/`DEFAULT_SHELL`/`NVIM_SYNC` |
 
+## Syncing across machines
+
+Git is the only sync channel — never rsync/cp the repo directory itself:
+machine-specific state (`fish_variables`, `conf.d/*`, most of `functions/*`)
+is gitignored on purpose, and copying the directory leaks it onto other
+machines (stow will then happily symlink it into `$HOME`).
+
+To propagate changes:
+
+```bash
+# on the machine where you changed something:
+git -C ~/.dotfiles add -A && git -C ~/.dotfiles commit -m "..." && git -C ~/.dotfiles push
+
+# on the other machines (re-stows + installs anything new, idempotently):
+git -C ~/.dotfiles pull && ~/.dotfiles/bootstrap.sh
+```
+
+For pushing from servers without a GitHub key, either add the machine's key
+to GitHub, or ssh in with agent forwarding (`ssh -A`) and use the SSH remote:
+`git -C ~/.dotfiles remote set-url origin git@github.com:spokeyjoe/.dotfiles.git`
+
 ## Tide prompt config
 
 The tide theme is stored as universal variables, so it lives in the
