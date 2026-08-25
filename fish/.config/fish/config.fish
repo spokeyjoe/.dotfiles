@@ -28,6 +28,14 @@ if status --is-interactive
     set -gx GIT_EDITOR $EDITOR
 end
 
+# --- Brewed glibc locale fix ---
+# A user-local ~/.linuxbrew installs its own glibc, whose locale archive is
+# empty — tmux and friends then refuse to start ("invalid LC_ALL, LC_CTYPE
+# or LANG"). Point brewed glibc at the system locales.
+if test -d "$HOME/.linuxbrew/Cellar/glibc"; and test -d /usr/lib/locale
+    set -gx LOCPATH /usr/lib/locale
+end
+
 # Universal Homebrew Setup
 set -l brew_paths \
     "/opt/homebrew/bin/brew" \
