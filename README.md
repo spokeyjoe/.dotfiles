@@ -16,8 +16,11 @@ safe to re-run. It will:
 
 1. Find Homebrew, or install it to `~/.linuxbrew` (plain `git clone`, no sudo)
 2. Install CLI tools: `fish tmux fzf` via brew; GNU stow via brew (GNU
-   tarball fallback); neovim via the official prebuilt tarball on Linux
-   (`~/.local/opt`), brew on macOS
+   tarball fallback); neovim >= 0.12 via the official prebuilt tarball on
+   Linux (`~/.local/opt`), brew on macOS; `tree-sitter` CLI >= 0.26.1
+   (needed by nvim-treesitter's main branch) via the official prebuilt
+   binary, or `cargo install` with a user-local rustup toolchain on
+   glibc < 2.39 systems (e.g. Ubuntu 22.04)
 3. `stow` every package into `$HOME` (pre-existing conflicting files are
    backed up to `~/.dotfiles-backup/<timestamp>/`)
 4. Install TPM and all tmux plugins, headlessly
@@ -28,17 +31,28 @@ safe to re-run. It will:
    in fish (no sudo / no `chsh`)
 8. Headless `nvim +Lazy! sync` (best effort)
 
-The script is defensive about weird environments: downloads retry and fall
-back from `curl` to `wget` (useful behind proxies that kill OpenSSL
-handshakes), broken brewed-perl stow bottles are detected via functional
-checks, and a brewed-glibc locale/locpath quirk is worked around.
+The script is defensive where it counts: network operations retry, tools are
+verified by actually running them (not just presence on PATH), broken
+brewed-perl stow bottles fall back to the GNU tarball, and brewed-glibc
+locale/CA quirks are worked around automatically.
+
+## Proxy note (Loon / ALPN)
+
+Some proxies (observed with Loon on iOS) kill curl's default TLS ClientHello
+— the connection dies with `SSL routines::unexpected eof` before any data
+flows, while GnuTLS-based tools (git, wget) pass. Disabling ALPN fixes it.
+The stowed `curl/.curlrc` sets `no-alpn` for the curl CLI, and the bootstrap
+points brew at an equivalent curlrc via `HOMEBREW_CURLRC` (fish config does
+the same for interactive use). If this affects you, the real fix is on the
+proxy side (check Loon's MITM list / node for `*.github.com`,
+`*.githubusercontent.com`, `pypi.org`).
 
 ### Overrides
 
 | Variable         | Default                                            | Purpose                     |
 | ---------------- | -------------------------------------------------- | --------------------------- |
 | `DOTFILES_DIR`   | `~/.dotfiles`                                      | repo location               |
-| `STOW_PACKAGES`  | `fish tmux nvim lazygit clang-format kitty`        | packages to stow            |
+| `STOW_PACKAGES`  | `fish tmux nvim lazygit clang-format kitty curl`   | packages to stow            |
 | `BREW_PACKAGES`  | `fish tmux stow neovim fzf`                        | formulas to install         |
 | `TIDE_FORCE=1`   | —                                                  | re-apply tide config        |
 | `SKIP_*=1`       | —                                                  | `BREW`/`STOW`/`TMUX`/`FISH_PLUGINS`/`DEFAULT_SHELL`/`NVIM_SYNC` |
