@@ -485,14 +485,17 @@ install_tpm() {
     fi
 
     step "Installing tmux plugins (headless)"
-    # Use a private socket directory so neither starting nor stopping this
-    # temporary server affects the user's active default tmux server.
+    # Use a private socket directory AND drop $TMUX so starting or stopping
+    # this throwaway server never touches the user's active tmux server.
+    # ($TMUX alone ignores TMUX_TMPDIR: when set, tmux resolves its socket
+    # from $TMUX, so a bootstrap re-run from inside tmux would kill-server
+    # the very session it runs in.)
     local tmux_tmpdir
     tmux_tmpdir="$(mktemp -d)"
-    TMUX_TMPDIR="$tmux_tmpdir" tmux start-server \; new-session -d -s __bootstrap 2>/dev/null || true
-    retry env TMUX_TMPDIR="$tmux_tmpdir" "$TPM_DIR/bin/install_plugins" && ok "tmux plugins installed" \
+    env -u TMUX TMUX_TMPDIR="$tmux_tmpdir" tmux start-server \; new-session -d -s __bootstrap 2>/dev/null || true
+    retry env -u TMUX TMUX_TMPDIR="$tmux_tmpdir" "$TPM_DIR/bin/install_plugins" && ok "tmux plugins installed" \
         || warn "tmux plugin install failed — run '<prefix> + I' inside tmux later"
-    TMUX_TMPDIR="$tmux_tmpdir" tmux kill-server 2>/dev/null || true
+    env -u TMUX TMUX_TMPDIR="$tmux_tmpdir" tmux kill-server 2>/dev/null || true
     rm -rf "$tmux_tmpdir"
 }
 
