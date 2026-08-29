@@ -519,28 +519,32 @@ install_fish_plugins() {
     # fisher keeps its ownership state in universal variables and refuses to
     # touch files it has no record of. Don't negotiate: wipe that state and
     # every plugin file, then do one clean install.
-    warn "fisher state missing/stale — resetting and reinstalling plugins"
+    warn "fisher state missing/stale — backing up and reinstalling plugins"
     fish -c 'set -e _fisher_plugins; for v in (set --universal --names | string match "_fisher_*_files"); set -e $v; end' 2>/dev/null || true
-    # Plugin files = anything in these dirs NOT symlinked from the repo.
-    # (The repo only owns the whitelisted functions; the rest is disposable
-    # machine state per fish/.gitignore.)
-    local sub f
+    # Plugin files = anything in these dirs NOT symlinked from the repo. Keep
+    # repo-owned links, but preserve machine-local files in the run's backup.
+    local sub f backup_target
     for sub in functions conf.d completions themes; do
         [ -d "$HOME/.config/fish/$sub" ] || continue
         while IFS= read -r f; do
-            case "$(readlink -f "$f" 2>/dev/null)" in
+            case "$(canonical_path "$f")" in
                 "$DOTFILES_DIR/"*) ;;          # stowed repo file — keep
-                *) rm -rf "$f" ;;
+                *)
+                    backup_target="$BACKUP_DIR/fish/.config/fish/$sub/$(basename "$f")"
+                    mkdir -p "$(dirname "$backup_target")"
+                    mv "$f" "$backup_target"
+                    warn "backed up machine-local fish file → $backup_target"
+                    ;;
             esac
         done < <(find "$HOME/.config/fish/$sub" -mindepth 1 -maxdepth 1)
     done
-    TIDE_REINSTALLED=1   # tide was wiped too → migrate_tide must re-apply
+    TIDE_REINSTALLED=1   # tide was moved aside too → migrate_tide must re-apply
 
     local tmp; tmp="$(mktemp -d)"
     download "https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish" "$tmp/fisher.fish" \
         || { warn "could not download fisher — skipping fish plugins"; rm -rf "$tmp"; return; }
     # Source (not copy) fisher so it can install itself as a managed plugin.
-    retry timeout 600 fish -c "source $tmp/fisher.fish; fisher install (cat $manifest)" \
+    retry run_with_timeout 600 fish -c "source $tmp/fisher.fish; fisher install (cat $manifest)" \
         && ok "fish plugins installed (see $manifest)" \
         || warn "fisher failed — re-run 'fisher install (cat $manifest)' inside fish"
     # Bulk install drops fisher itself when it is running from a sourced
