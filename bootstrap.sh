@@ -393,8 +393,14 @@ ensure_rust() {
     fi
     bin_works cargo --version && return 0
     step "Installing Rust toolchain (rustup, minimal)"
-    local tmp; tmp="$(mktemp -d)"
-    download "https://static.rust-lang.org/rustup/dist/x86_64-unknown-linux-gnu/rustup-init" "$tmp/rustup-init" \
+    local rarch tmp
+    case "$ARCH" in
+        x86_64)        rarch="x86_64-unknown-linux-gnu" ;;
+        aarch64|arm64) rarch="aarch64-unknown-linux-gnu" ;;
+        *) die "unsupported architecture for rustup: $ARCH" ;;
+    esac
+    tmp="$(mktemp -d)"
+    download "https://static.rust-lang.org/rustup/dist/$rarch/rustup-init" "$tmp/rustup-init" \
         || die "could not download rustup-init"
     chmod +x "$tmp/rustup-init"
     "$tmp/rustup-init" -y --quiet --profile minimal --default-toolchain stable
