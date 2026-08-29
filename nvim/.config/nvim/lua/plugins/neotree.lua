@@ -6,7 +6,8 @@ return {
     "nvim-tree/nvim-web-devicons",
     "MunifTanjim/nui.nvim",
   },
-  cmd = "Neotree",
+  -- Eagerly loaded: nvim <dir> should open neo-tree, not plain netrw.
+  lazy = false,
   keys = {
     { "<leader>t", "<cmd>Neotree toggle reveal_force_cwd<CR>", desc = "Toggle Neotree" },
   },
@@ -15,6 +16,8 @@ return {
       close_if_last_window = true,
       use_libuv_file_watcher = true,
       filesystem = {
+        -- Take over netrw for directory buffers (`nvim .`).
+        hijack_netrw_behavior = "open_current",
         commands = {
           copy_selector = function(state)
             local node = state.tree:get_node()
