@@ -6,7 +6,10 @@ return {
     "nvim-tree/nvim-web-devicons",
     "MunifTanjim/nui.nvim",
   },
-  event = "BufEnter",
+  cmd = "Neotree",
+  keys = {
+    { "<leader>t", "<cmd>Neotree toggle reveal_force_cwd<CR>", desc = "Toggle Neotree" },
+  },
   config = function()
     require("neo-tree").setup {
       close_if_last_window = true,
@@ -47,11 +50,5 @@ return {
         },
       },
     }
-    vim.keymap.set(
-      "n",
-      "<leader>t",
-      "<cmd>Neotree toggle reveal_force_cwd<CR>",
-      { desc = "Toggle Neotree" }
-    )
   end,
 }
