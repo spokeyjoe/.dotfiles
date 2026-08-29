@@ -8,7 +8,10 @@ require "keymaps"
 require "bootlazy"
 
 -- load plugins
-require("lazy").setup "plugins"
+require("lazy").setup {
+  spec = { { import = "plugins" } },
+  rocks = { enabled = false },
+}
 
 -- colorscheme
 require "colorscheme"
