@@ -1,25 +1,30 @@
 local is_wsl = vim.fn.has "wsl" == 1
 local vault_path = is_wsl and "/mnt/c/Users/joe.qiu/Desktop/notes"
   or vim.fn.expand "~/Documents/notes"
+local vault_exists = (vim.uv or vim.loop).fs_stat(vault_path) ~= nil
 
 return {
   "obsidian-nvim/obsidian.nvim",
   version = "*", -- recommended, use latest release instead of latest commit
-  lazy = true,
+  enabled = vault_exists,
 
-  cmd = { "ObsidianSearch", "ObsidianQuickSwitch", "ObsidianToday", "ObsidianNew" },
+  cmd = "Obsidian",
+
+  keys = {
+    { "<leader>on", "<cmd>Obsidian new<CR>", desc = "Create New Note" },
+    { "<leader>os", "<cmd>Obsidian search<CR>", desc = "Search Obsidian" },
+    { "<leader>oq", "<cmd>Obsidian quick_switch<CR>", desc = "Quick Switch" },
+    { "<leader>ot", "<cmd>Obsidian today<CR>", desc = "Daily Note" },
+  },
 
   event = {
     "BufReadPre " .. vault_path .. "/**/*.md",
     "BufNewFile " .. vault_path .. "/**/*.md",
-
-    "BufEnter " .. vault_path,
   },
 
   dependencies = {
     "nvim-lua/plenary.nvim",
-    "hrsh7th/nvim-cmp",
-    "nvim-telescope/telescope.nvim",
+    "ibhagwan/fzf-lua",
     "nvim-treesitter/nvim-treesitter",
     "MeanderingProgrammer/render-markdown.nvim",
   },
@@ -35,6 +40,10 @@ return {
         },
       },
 
+      picker = {
+        name = "fzf-lua",
+      },
+
       daily_notes = {
         folder = "daily",
         date_format = "%Y-%m-%d",
@@ -44,31 +53,16 @@ return {
         workdays_only = false,
       },
 
-      completion = {
-        -- Enables completion using nvim_cmp
-        nvim_cmp = false,
-        -- Enables completion using blink.cmp
-        blink = true,
-        -- Trigger completion at 2 chars.
-        min_chars = 2,
-        match_case = true,
-      },
-
       new_notes_location = "current_dir",
 
-      -- Optional, customize how note IDs are generated given an optional title.
+      -- Create Zettelkasten IDs from a title or random uppercase suffix.
       ---@param title string|?
       ---@return string
       note_id_func = function(title)
-        -- Create note IDs in a Zettelkasten format with a timestamp and a suffix.
-        -- In this case a note with the title 'My new note' will be given an ID that looks
-        -- like '1657296016-my-new-note', and therefore the file name '1657296016-my-new-note.md'
         local suffix = ""
         if title ~= nil then
-          -- If title is given, transform it into valid file name.
           suffix = title:gsub(" ", "-"):gsub("[^A-Za-z0-9-]", ""):lower()
         else
-          -- If title is nil, just add 4 random uppercase letters to the suffix.
           for _ = 1, 4 do
             suffix = suffix .. string.char(math.random(65, 90))
           end
@@ -76,21 +70,10 @@ return {
         return tostring(os.time()) .. "-" .. suffix
       end,
 
-      ---@class obsidian.config.FrontmatterOpts
-      ---
-      --- Whether to enable frontmatter, boolean for global on/off, or a function that takes filename and returns boolean.
-      ---@field enabled? (fun(fname: string?): boolean)|boolean
-      ---
-      --- Function to turn Note attributes into frontmatter.
-      ---@field func? fun(note: obsidian.Note): table<string, any>
-      --- Function that is passed to table.sort to sort the properties, or a fixed order of properties.
-      ---
-      --- List of string that sorts frontmatter properties, or a function that compares two values, set to vim.NIL/false to do no sorting
-      ---@field sort? string[] | (fun(a: any, b: any): boolean) | vim.NIL | boolean
       frontmatter = {
         enabled = true,
         func = function(note)
-          -- Overwrite title with the first # header in the buffer, if present
+          -- Overwrite title with the first # header in the buffer, if present.
           local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
           for _, line in ipairs(lines) do
             local header = line:match "^# (.+)$"
@@ -110,8 +93,7 @@ return {
 
           local out = { id = note.id, aliases = note.aliases, tags = note.tags, title = note.title }
 
-          -- `note.metadata` contains any manually added fields in the frontmatter.
-          -- So here we just make sure those fields are kept in the frontmatter.
+          -- Keep any manually added frontmatter fields.
           if note.metadata ~= nil and not vim.tbl_isempty(note.metadata) then
             for k, v in pairs(note.metadata) do
               out[k] = v
@@ -124,11 +106,6 @@ return {
         sort = { "id", "aliases", "tags", "title" },
       },
     }
-
-    vim.keymap.set("n", "<leader>on", "<cmd>Obsidian new<CR>", { desc = "Create New Note" })
-    vim.keymap.set("n", "<leader>os", "<cmd>Obsidian search<CR>", { desc = "Search Obsidian" })
-    vim.keymap.set("n", "<leader>oq", "<cmd>Obsidian quick_switch<CR>", { desc = "Quick Switch" })
-    vim.keymap.set("n", "<leader>ot", "<cmd>Obsidian today<CR>", { desc = "Daily Note" })
 
     vim.api.nvim_create_autocmd("User", {
       pattern = "ObsidianNoteEnter",
