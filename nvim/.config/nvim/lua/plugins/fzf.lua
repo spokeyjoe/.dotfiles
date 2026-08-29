@@ -49,8 +49,6 @@ return {
       },
     }
 
-    fzf.register_ui_select()
-
     vim.keymap.set("n", "<leader>sh", fzf.help_tags, { desc = "[S]earch [H]elp" })
     vim.keymap.set("n", "<leader>sk", fzf.keymaps, { desc = "[S]earch [K]eymaps" })
     vim.keymap.set("n", "<leader>sf", fzf.files, { desc = "[S]earch [F]iles" })
