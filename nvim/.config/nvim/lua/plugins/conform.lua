@@ -7,18 +7,23 @@ return {
       {
         "<leader>f",
         function()
-          require("conform").format { async = true, lsp_format = "fallback" }
+          local clang_format_only = { c = true, cpp = true }
+          local lsp_format = clang_format_only[vim.bo.filetype] and "never" or "fallback"
+          require("conform").format { async = true, lsp_format = lsp_format }
         end,
         mode = "",
         desc = "[F]ormat buffer",
       },
     },
+    init = function()
+      -- Make the built-in gq formatting operator use Conform.
+      vim.o.formatexpr = "v:lua.require'conform'.formatexpr()"
+    end,
     opts = {
       notify_on_error = false,
       format_on_save = function(bufnr)
-        -- Disable "format_on_save lsp_fallback" for languages that don't
-        -- have a well standardized coding style. You can add additional
-        -- languages here or re-enable it for the disabled ones.
+        -- format_on_save itself still runs for C/C++; only disable falling
+        -- back to clangd so clang-format is the single source of truth.
         local disable_filetypes = { c = true, cpp = true }
         local lsp_format_opt
         if disable_filetypes[vim.bo[bufnr].filetype] then
