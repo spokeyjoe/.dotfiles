@@ -11,7 +11,10 @@ return {
       local ok, ts = pcall(require, "nvim-treesitter")
       -- Guard against mid-migration state (plugin still on legacy master).
       if not ok or type(ts.setup) ~= "function" or type(ts.install) ~= "function" then
-        vim.notify("nvim-treesitter: run :Lazy restore to switch to the main branch", vim.log.levels.WARN)
+        vim.notify(
+          "nvim-treesitter: run :Lazy restore to switch to the main branch",
+          vim.log.levels.WARN
+        )
         return
       end
       ts.setup()
@@ -21,12 +24,14 @@ return {
         "bash",
         "c",
         "cpp",
+        "cuda",
         "diff",
         "html",
         "lua",
         "luadoc",
         "markdown",
         "markdown_inline",
+        "python",
         "query",
         "vim",
         "vimdoc",
@@ -41,18 +46,18 @@ return {
       end
 
       -- Textobjects: select (replaces the old textobjects.select module).
-      require("nvim-treesitter-textobjects").setup({
+      require("nvim-treesitter-textobjects").setup {
         select = { lookahead = true },
-      })
-      local ts_select = require("nvim-treesitter-textobjects.select")
-      for lhs, capture in pairs({
+      }
+      local ts_select = require "nvim-treesitter-textobjects.select"
+      for lhs, capture in pairs {
         af = "@function.outer",
         ["if"] = "@function.inner",
         ac = "@class.outer",
         ic = "@class.inner",
         al = "@loop.outer",
         il = "@loop.inner",
-      }) do
+      } do
         vim.keymap.set({ "x", "o" }, lhs, function()
           ts_select.select_textobject(capture, "textobjects")
         end, { desc = "treesitter " .. capture })
@@ -71,7 +76,7 @@ return {
           if pcall(vim.treesitter.start, buf) then
             -- Treesitter highlight active: keep regex syntax only as a
             -- supplement for cpp (was additional_vim_regex_highlighting).
-            vim.bo[buf].syntax = (ft == "cpp") and "on" or ""
+            vim.bo[buf].syntax = (ft == "cpp") and ft or ""
             -- Treesitter indentation (experimental; was disabled for cpp).
             if ft ~= "cpp" then
               vim.bo[buf].indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
@@ -86,7 +91,7 @@ return {
             -- background; highlighting kicks in for the next buffer of
             -- this filetype. Flag prevents re-triggering this session.
             installing[lang] = true
-            ts.install({ lang })
+            ts.install { lang }
           end
         end,
       })
