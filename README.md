@@ -15,8 +15,9 @@ The script is idempotent — anything already installed is skipped, so it is
 safe to re-run. It will:
 
 1. Find Homebrew, or install it to `~/.linuxbrew` (plain `git clone`, no sudo)
-2. Install CLI tools: `fish tmux fzf` via brew; GNU stow via brew (GNU
-   tarball fallback); neovim >= 0.12 via the official prebuilt tarball on
+2. Install CLI tools: `fish tmux fzf` (plus GNU `coreutils` on macOS) via
+   brew; GNU stow via brew (GNU tarball fallback); neovim >= 0.12 via the
+   official prebuilt tarball on
    Linux (`~/.local/opt`), brew on macOS; `tree-sitter` CLI >= 0.26.1
    (needed by nvim-treesitter's main branch) via the official prebuilt
    binary, or `cargo install` with a user-local rustup toolchain on
@@ -42,7 +43,7 @@ locale/CA quirks are worked around automatically.
 | ---------------- | -------------------------------------------------- | --------------------------- |
 | `DOTFILES_DIR`   | `~/.dotfiles`                                      | repo location               |
 | `STOW_PACKAGES`  | `fish tmux nvim lazygit clang-format kitty pi`      | packages to stow          |
-| `BREW_PACKAGES`  | `fish tmux stow neovim fzf`                        | formulas to install         |
+| `BREW_PACKAGES`  | `fish tmux fzf` (+ `coreutils` on macOS)          | formulas to install         |
 | `TIDE_FORCE=1`   | —                                                  | re-apply tide config        |
 | `SKIP_*=1`       | —                                                  | `BREW`/`STOW`/`TMUX`/`FISH_PLUGINS`/`DEFAULT_SHELL`/`NVIM_SYNC` |
 

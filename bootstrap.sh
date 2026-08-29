@@ -43,7 +43,10 @@ ARCH="$(uname -m)"      # x86_64 | arm64/aarch64
 DOTFILES_DIR="${DOTFILES_DIR:-$HOME/.dotfiles}"
 DOTFILES_REPO="${DOTFILES_REPO:-https://github.com/spokeyjoe/.dotfiles.git}"
 STOW_PACKAGES="${STOW_PACKAGES:-fish tmux nvim lazygit clang-format kitty pi}"
-BREW_PACKAGES="${BREW_PACKAGES:-fish tmux fzf}"
+DEFAULT_BREW_PACKAGES="fish tmux fzf"
+# GNU coreutils provide gtimeout/greadlink on stock macOS.
+[ "$OS" = "Darwin" ] && DEFAULT_BREW_PACKAGES="$DEFAULT_BREW_PACKAGES coreutils"
+BREW_PACKAGES="${BREW_PACKAGES:-$DEFAULT_BREW_PACKAGES}"
 LINUXBREW_DIR="$HOME/.linuxbrew"
 TPM_DIR="$HOME/.tmux/plugins/tpm"
 BACKUP_DIR="$HOME/.dotfiles-backup/$(date +%Y%m%d-%H%M%S)"
@@ -90,8 +93,52 @@ have()  { command -v "$1" >/dev/null 2>&1; }
 works() { "$@" >/dev/null 2>&1; }
 # Functional check: a binary must not only exist but actually run.
 bin_works() { local bin="$1"; shift; have "$bin" && works "$bin" "$@"; }
-# version_ge <have> <want> — true if $have >= $want (dot-separated numbers)
-version_ge() { [ "$(printf '%s\n%s\n' "$2" "$1" | sort -V | head -1)" = "$2" ]; }
+# version_ge <have> <want> — true if $have >= $want (dot-separated numbers).
+# Pure Bash so it works on stock macOS (BSD sort has no GNU -V).
+version_ge() {
+    local have="$1" want="$2" i max h w
+    local -a have_parts want_parts
+    IFS=. read -r -a have_parts <<<"$have"
+    IFS=. read -r -a want_parts <<<"$want"
+    max=${#have_parts[@]}
+    [ "${#want_parts[@]}" -gt "$max" ] && max=${#want_parts[@]}
+    for ((i = 0; i < max; i++)); do
+        h="${have_parts[i]:-0}"
+        w="${want_parts[i]:-0}"
+        [[ ! $h =~ ^[0-9]+$ || ! $w =~ ^[0-9]+$ ]] && return 1
+        h=$((10#$h))
+        w=$((10#$w))
+        if [ "$h" -gt "$w" ]; then return 0; fi
+        if [ "$h" -lt "$w" ]; then return 1; fi
+    done
+    return 0
+}
+
+# canonical_path <path> — GNU readlink -f with a stock-macOS fallback.
+canonical_path() {
+    local path="$1" dir base
+    if have readlink && readlink -f "$path" 2>/dev/null; then return 0; fi
+    if have greadlink && greadlink -f "$path" 2>/dev/null; then return 0; fi
+    if have realpath && realpath "$path" 2>/dev/null; then return 0; fi
+    [ -e "$path" ] || return 1
+    dir="$(dirname "$path")"
+    base="$(basename "$path")"
+    (cd "$dir" 2>/dev/null && printf '%s/%s\n' "$(pwd -P)" "$base")
+}
+
+# run_with_timeout <seconds> <command...> — timeout(1) or coreutils' gtimeout.
+run_with_timeout() {
+    local seconds="$1"
+    shift
+    if have timeout; then
+        timeout "$seconds" "$@"
+    elif have gtimeout; then
+        gtimeout "$seconds" "$@"
+    else
+        warn "timeout is unavailable; running without a timeout: $*"
+        "$@"
+    fi
+}
 
 # Retry a command up to 3 times (the proxy flaps when iOS suspends Loon).
 retry() {
@@ -107,7 +154,7 @@ retry() {
 # git clone with retries; removes the half-cloned destination before retrying.
 git_clone() {
     local dest="${*: -1}" n=0
-    until timeout 300 git clone "$@"; do
+    until run_with_timeout 300 git clone "$@"; do
         n=$((n + 1))
         [ "$n" -ge 3 ] && return 1
         warn "retrying ($n/3): git clone $*"
@@ -362,7 +409,7 @@ stow_backup_conflicts() {
         [ -e "$target" ] || [ -L "$target" ] || continue
         # Resolves into the dotfiles repo (already stowed) → no conflict
         if [ -e "$target" ]; then
-            case "$(readlink -f "$target")" in
+            case "$(canonical_path "$target")" in
                 "$DOTFILES_DIR/"*) continue ;;
             esac
         fi
@@ -555,13 +602,13 @@ sync_nvim() {
     bin_works nvim --version || return 0
     step "Installing neovim plugins (lazy.nvim restore from lockfile, headless)"
     # NB: `restore`, not `sync` — sync also *updates* past lazy-lock.json.
-    if ! timeout 600 nvim --headless "+Lazy! restore" +qa </dev/null >/dev/null 2>&1; then
+    if ! run_with_timeout 600 nvim --headless "+Lazy! restore" +qa </dev/null >/dev/null 2>&1; then
         warn "headless lazy.nvim restore failed — open nvim once and run :Lazy restore"
         return
     fi
     # Second headless run: lets the treesitter config build parsers (it waits
     # when headless) and acts as a startup sanity check.
-    if timeout 600 nvim --headless +qa </dev/null >/dev/null 2>&1; then
+    if run_with_timeout 600 nvim --headless +qa </dev/null >/dev/null 2>&1; then
         ok "neovim plugins restored from lazy-lock.json, treesitter parsers built"
     else
         warn "neovim restored, but a plain headless startup failed — check :checkhealth"
