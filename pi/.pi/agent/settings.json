@@ -10,7 +10,6 @@
   "defaultThinkingLevel": "high",
   "enabledModels": [
     "openai-codex/gpt-5.6-sol",
-    "fireworks/accounts/fireworks/models/kimi-k3",
     "opencode-go/kimi-k3",
     "neuralwatt/kimi-k3"
   ],
@@ -21,5 +20,5 @@
   },
   "tuiMode": "fullscreen",
   "quietStartup": false,
-  "showCacheMissNotices": true
+  "showCacheMissNotices": false
 }
