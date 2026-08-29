@@ -62,11 +62,9 @@ export HOMEBREW_NO_AUTO_UPDATE=1
 export HOMEBREW_NO_INSTALL_CLEANUP=1
 export HOMEBREW_NO_ANALYTICS=1
 
-# Brewed glibc (user-local ~/.linuxbrew) ships no locale archive, which makes
-# tmux refuse to start — point it at the system locales.
-if [ -d "$LINUXBREW_DIR/Cellar/glibc" ] && [ -d /usr/lib/locale ]; then
-    export LOCPATH="${LOCPATH:-/usr/lib/locale}"
-fi
+# Never export LOCPATH globally: it makes system glibc programs use the
+# wrong locale database. fix_brew_glibc_locale generates a proper archive
+# inside the Homebrew glibc prefix instead.
 export LANG="${LANG:-en_US.UTF-8}"
 # Some machines export locales that were never generated (e.g. LC_NUMERIC=
 # zh_CN.UTF-8) — every perl/tmux call then spews warnings. Fall back to C.utf8.
@@ -211,6 +209,27 @@ setup_brew() {
     hash -r
     fix_brew_ca
     ok "brew: $("$BREW" --version | head -1)"
+}
+
+# User-local Homebrew glibc installations do not include a locale archive.
+# Generate one inside its own prefix instead of exporting LOCPATH globally
+# (LOCPATH would also affect programs linked against the system glibc).
+fix_brew_glibc_locale() {
+    [ "$OS" = "Linux" ] || return 0
+    [ -n "$BREW" ] || return 0
+    local glibc_opt glibc_prefix locale_dir archive
+    glibc_opt="$("$BREW" --prefix glibc 2>/dev/null)" || return 0
+    glibc_prefix="$(canonical_path "$glibc_opt")" || return 0
+    [ -x "$glibc_prefix/bin/localedef" ] || return 0
+    locale_dir="$glibc_prefix/lib/locale"
+    archive="$locale_dir/locale-archive"
+    [ -s "$archive" ] && return 0
+    mkdir -p "$locale_dir"
+    if "$glibc_prefix/bin/localedef" -i en_US -f UTF-8 en_US.UTF-8 >/dev/null 2>&1; then
+        ok "created Homebrew glibc locale archive (no global LOCPATH needed)"
+    else
+        warn "could not create Homebrew glibc locale archive"
+    fi
 }
 
 # User-local brew prefixes sometimes miss the openssl -> ca-certificates
@@ -627,6 +646,7 @@ main() {
 
     setup_brew
     install_brew_packages
+    fix_brew_glibc_locale
     install_stow
     install_neovim
     install_treesitter_cli

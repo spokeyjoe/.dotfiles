@@ -18,6 +18,15 @@ set -g theme_display_user yes
 set -g theme_hide_hostname no
 set -g theme_hostname always
 
+# Normalize locale. SSH clients can forward per-category LC_* variables into
+# sessions where the matching locale database is unavailable; LC_ALL prevents
+# that mixed state. The bootstrap generates en_US.UTF-8 for brewed glibc too.
+# LOCPATH must not leak in from an older config or parent environment: it
+# would make system and Homebrew glibc instances share the wrong archives.
+set -e LOCPATH
+set -gx LANG en_US.UTF-8
+set -gx LC_ALL en_US.UTF-8
+
 # Preferred Editor
 if status --is-interactive
     if type -q nvim
@@ -28,14 +37,8 @@ if status --is-interactive
     set -gx GIT_EDITOR $EDITOR
 end
 
-# --- Brewed glibc locale fix ---
-# A user-local ~/.linuxbrew installs its own glibc, whose locale archive is
-# empty — tmux and friends then refuse to start ("invalid LC_ALL, LC_CTYPE
-# or LANG"). Point brewed glibc at the system locales.
-if test -d "$HOME/.linuxbrew/Cellar/glibc"; and test -d /usr/lib/locale
-    set -gx LOCPATH /usr/lib/locale
-end
-
+# Keep LOCPATH unset. The bootstrap generates a locale archive inside brewed
+# glibc instead; exporting LOCPATH here would also affect system glibc tools.
 # Universal Homebrew Setup
 set -l brew_paths \
     "/opt/homebrew/bin/brew" \
