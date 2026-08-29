@@ -1,12 +1,12 @@
 return {
   "neovim/nvim-lspconfig",
   dependencies = {
-    { "williamboman/mason.nvim", opts = {} },
-    "williamboman/mason-lspconfig.nvim",
+    { "mason-org/mason.nvim", opts = {} },
+    "mason-org/mason-lspconfig.nvim",
     "WhoIsSethDaniel/mason-tool-installer.nvim",
     -- UI
     { "j-hui/fidget.nvim", opts = {} },
-    -- Autocomplee engine
+    -- Completion engine
     "saghen/blink.cmp",
   },
   config = function()
@@ -65,31 +65,32 @@ return {
       lua_ls = {
         settings = {
           Lua = {
-            completion = {
-              callSnippet = "Replace",
-              diagnostics = { globals = { "vim" } },
-            },
+            completion = { callSnippet = "Replace" },
+            diagnostics = { globals = { "vim" } },
           },
         },
       },
     }
 
-    require("mason").setup()
+    local default_capabilities = require("blink.cmp").get_lsp_capabilities()
+    for server_name, server_config in pairs(servers) do
+      server_config.capabilities =
+        vim.tbl_deep_extend("force", default_capabilities, server_config.capabilities or {})
+      vim.lsp.config(server_name, server_config)
+    end
 
-    local ensure_installed = vim.tbl_keys(servers or {})
+    -- mason-lspconfig 2.x supports Neovim's native LSP configuration API and
+    -- replaces the old setup_handlers API with automatic_enable.
+    local server_names = vim.tbl_keys(servers)
+    require("mason-lspconfig").setup {
+      ensure_installed = server_names,
+      -- Restrict auto-enable to declared servers; formatter packages such as
+      -- stylua also have nvim-lspconfig mappings in 2.x.
+      automatic_enable = server_names,
+    }
+
+    local ensure_installed = vim.deepcopy(server_names)
     vim.list_extend(ensure_installed, { "stylua" })
     require("mason-tool-installer").setup { ensure_installed = ensure_installed }
-
-    require("mason-lspconfig").setup {
-      handlers = {
-        function(server_name)
-          local server_config = servers[server_name] or {}
-          server_config.capabilities =
-            require("blink.cmp").get_lsp_capabilities(server_config.capabilities)
-          vim.lsp.config[server_name] = server_config
-          vim.lsp.enable(server_name)
-        end,
-      },
-    }
   end,
 }
