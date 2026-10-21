@@ -8,6 +8,10 @@ return {
     fzf.setup {
       "default-title",
 
+      files = {
+        no_ignore = true,
+      },
+
       keymap = {
         fzf = {
           ["ctrl-q"] = "select-all+accept",
