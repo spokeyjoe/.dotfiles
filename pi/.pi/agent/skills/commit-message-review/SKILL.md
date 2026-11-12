@@ -1,6 +1,6 @@
 ---
-name: commit-review
-description: Review a git commit message — use when the user asks to review or improve a commit message (HEAD or a named commit), or wants a final polish on a commit before pushing or opening a PR.
+name: commit-message-review
+description: Critique and rewrite a git commit MESSAGE (subject and body text), not the code. Use only when the user explicitly asks about the message itself, e.g. "review my commit message", "improve/reword the commit message", "polish the message before pushing". Do NOT use for code review of a commit, branch, diff, or MR ("review this commit", "review my branch", "look over HEAD") unless the message is explicitly mentioned.
 ---
 
 # Commit Message Review
