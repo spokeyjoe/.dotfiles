@@ -9,6 +9,7 @@ secrets.fish
 /themes/*
 
 # Whitelists
+!/functions/ask.fish
 !/functions/claude.fish
 !/functions/copy.fish
 !/functions/proxy.fish

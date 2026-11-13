@@ -99,5 +99,4 @@ alias info='info --vi-keys'
 # Grotty: use real italics for rendering
 set -gx MANROFFOPT -P-i
 
-# Pi CLI single question
-alias ask='pi -p --no-session --no-tools --model gpt-6.1-sol --thinking medium'
+# Pi CLI single question: see functions/ask.fish
