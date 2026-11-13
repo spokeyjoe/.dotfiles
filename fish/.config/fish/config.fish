@@ -93,3 +93,5 @@ alias tk='tmux kill-session -t'
 alias tka='tmux kill-server'
 alias tm='tmux attach-session -t main 2>/dev/null || tmux new-session -s main'
 
+# info
+alias info='info --vi-keys'
