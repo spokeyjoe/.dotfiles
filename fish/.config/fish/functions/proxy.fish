@@ -1,4 +1,12 @@
-function proxy --description 'Enable terminal proxy'
+function proxy --description 'Enable terminal proxy (usage: proxy [iphone-ip])'
+    # Passing an IP skips the menu and uses the Company profile with that IP.
+    if test (count $argv) -gt 0
+        set -l iphone_ip (__proxy_find_iphone $argv[1])
+        or return 1
+        __proxy_apply $iphone_ip 6154 6153 "Company (iPhone @ $iphone_ip)"
+        return
+    end
+
     echo "🌐 Select Proxy Profile:"
     echo "   [1] 🏢 Company (iPhone Hotspot, auto-scan)"
     echo "   [2] 🏠 Home (Mac Surge -> 127.0.0.1)"
@@ -17,16 +25,10 @@ function proxy --description 'Enable terminal proxy'
             # --- Company (iPhone) ---
             set -l iphone_ip (__proxy_find_iphone)
             or return 1
-            set -gx proxy_host $iphone_ip
-            set -gx proxy_http_port "6154"
-            set -gx proxy_socks_port "6153"
-            set -gx proxy_type "Company (iPhone @ $iphone_ip)"
+            __proxy_apply $iphone_ip 6154 6153 "Company (iPhone @ $iphone_ip)"
         case 2
             # --- Home (Mac Surge) ---
-            set -gx proxy_host "127.0.0.1"
-            set -gx proxy_http_port "6152"
-            set -gx proxy_socks_port "6153"
-            set -gx proxy_type "Home (Surge)"
+            __proxy_apply 127.0.0.1 6152 6153 "Home (Surge)"
         case 0
             echo "Operation cancelled."
             return 0
@@ -34,6 +36,13 @@ function proxy --description 'Enable terminal proxy'
             echo "Invalid choice."
             return 1
     end
+end
+
+function __proxy_apply --argument-names host http_port socks_port type
+    set -gx proxy_host $host
+    set -gx proxy_http_port $http_port
+    set -gx proxy_socks_port $socks_port
+    set -gx proxy_type $type
 
     set -gx http_proxy "http://$proxy_host:$proxy_http_port"
     set -gx https_proxy "http://$proxy_host:$proxy_http_port"
