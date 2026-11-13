@@ -95,3 +95,6 @@ alias tm='tmux attach-session -t main 2>/dev/null || tmux new-session -s main'
 
 # info
 alias info='info --vi-keys'
+
+# Grotty: use real italics for rendering
+set -gx MANROFFOPT -P-i
