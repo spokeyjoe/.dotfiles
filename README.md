@@ -26,11 +26,13 @@ safe to re-run. It will:
    backed up to `~/.dotfiles-backup/<timestamp>/`)
 4. Install TPM and all tmux plugins, headlessly
 5. Install fisher and the fish plugins listed in `fish_plugins`
-   (tide, fzf.fish, autopair, z, fish-lf-icons)
+   (tide, fzf.fish, autopair, z, fish-lf-icons); later manifest changes are
+   applied with `fisher update`, a clean reinstall is only the last resort
 6. Migrate the tide prompt theme via `fish/.config/fish/tide_vars.fish`
-7. Add a guarded `exec fish` block to `~/.bashrc` so interactive logins land
-   in fish (no sudo / no `chsh`)
-8. Headless `nvim +Lazy! sync` (best effort)
+7. Add a guarded `exec fish` block to the login shell's rc file (`~/.bashrc`
+   for bash, `~/.zshrc` for zsh) so interactive logins land in fish
+   (no sudo / no `chsh`)
+8. Headless `nvim +Lazy! restore` from `lazy-lock.json` (best effort)
 
 The script is defensive where it counts: network operations retry, tools are
 verified by actually running them (not just presence on PATH), broken
@@ -45,7 +47,8 @@ locale/CA quirks are worked around automatically.
 | `STOW_PACKAGES`  | `fish tmux nvim lazygit clang-format kitty pi`      | packages to stow          |
 | `BREW_PACKAGES`  | `fish tmux fzf` (+ `coreutils` on macOS)          | formulas to install         |
 | `TIDE_FORCE=1`   | —                                                  | re-apply tide config        |
-| `SKIP_*=1`       | —                                                  | `BREW`/`STOW`/`TMUX`/`FISH_PLUGINS`/`DEFAULT_SHELL`/`NVIM_SYNC` |
+| `SKIP_BREW=1`    | —                                                  | skip all tool installation (Homebrew, brew packages, stow, neovim, tree-sitter) |
+| `SKIP_*=1`       | —                                                  | `STOW`/`TMUX`/`FISH_PLUGINS`/`DEFAULT_SHELL`/`NVIM_SYNC` |
 
 ## Syncing across machines
 
@@ -86,11 +89,15 @@ fish ~/.dotfiles/scripts/dump-tide.fish > ~/.dotfiles/fish/.config/fish/tide_var
 
 ## Default shell
 
-The bootstrap appends a guarded block to `~/.bashrc` that `exec`s fish for
-interactive shells — no sudo or `chsh` needed:
+The bootstrap appends a guarded block to the login shell's rc file
+(`~/.bashrc`, or `~/.zshrc` on zsh/macOS) that `exec`s fish for interactive
+shells — no sudo or `chsh` needed:
 
-- plain bash when you need it: `bash --norc`
-- skip fish for one ssh session: `NO_FISH=1 ssh <host>`
+- plain shell when you need it: `bash --norc` (or `zsh -f`)
+- skip fish for one ssh session: `ssh -t <host> bash --norc`
+  (`NO_FISH=1 ssh <host>` does not work: ssh doesn't forward local variables;
+  `NO_FISH=1` only helps where it is already in the environment, e.g.
+  `NO_FISH=1 bash`)
 
 (The tmux config also auto-detects fish, so `tm` gives you fish either way.)
 If you'd rather do it the classic way and have sudo:
