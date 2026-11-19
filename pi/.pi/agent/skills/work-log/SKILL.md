@@ -79,10 +79,18 @@ Add exactly one entry for the log. Use a relative file link, list only related c
 
 This step is complete when the log has one non-duplicate index entry and every added relative link resolves.
 
-## 4. Validate and report
+## 4. Check the architecture document
 
-Review the new log and index diff. Check dates, status, commit hashes, changed-file coverage, Markdown structure, and relative links. Leave the files uncommitted unless the user asked for a commit.
+If `docs/architecture.md` exists, read it and compare it with the scoped changes. Determine whether the work changes the architecture or structure of the software stack, for example: adding, removing, renaming, or moving a component, module, library, or directory; changing a component boundary, dependency, or interface between components; changing the build platforms, toolchain, SDK, or environment setup; or changing a data flow or control flow that the document describes.
 
-Report the paths created or updated and any scope, verification, author, or commit information that could not be established.
+If the document is affected, update only the affected sections, preserving its existing structure and style, and base every edit on evidence from step 1. If it is not affected, leave it unchanged. If the document does not exist, skip this step.
+
+This step is complete when `docs/architecture.md` is either updated to match the work or confirmed to need no change, and the decision is recorded for the report.
+
+## 5. Validate and report
+
+Review the new log and index diff, and the `docs/architecture.md` diff if step 4 changed it. Check dates, status, commit hashes, changed-file coverage, Markdown structure, and relative links. Leave the files uncommitted unless the user asked for a commit.
+
+Report the paths created or updated, whether `docs/architecture.md` was updated (and which sections) or needed no change, and any scope, verification, author, or commit information that could not be established.
 
 This step is complete when both files are internally consistent and all uncertainty is explicit.
